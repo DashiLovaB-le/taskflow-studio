@@ -53,7 +53,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Logo */}
       <div className={cn("flex items-center gap-3 px-4 py-6", collapsed && "justify-center")}>
         <img 
-          src="/logo.png" 
+          src="/logo-animado-task.gif" 
           alt="TaskDay" 
           className="h-10 w-10 object-contain"
         />

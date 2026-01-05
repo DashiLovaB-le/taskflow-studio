@@ -156,6 +156,7 @@ const resources = {
       "Uploading...": "Enviando...",
       "Please select an image file": "Por favor, selecione um arquivo de imagem",
       "Image must be less than 5MB": "A imagem deve ter menos de 5MB",
+      "Settings updated successfully!": "Configurações atualizadas com sucesso!",
     }
   }
 };

@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/hooks/useTheme';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { SunIcon, MoonIcon } from '@radix-ui/react-icons';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
@@ -16,10 +17,14 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { profile, updateProfile, uploadAvatar } = useProfile();
+  const { settings, updateSettings } = useUserSettings();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [weeklySummary, setWeeklySummary] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -28,6 +33,14 @@ export default function SettingsPage() {
       setEmail(profile.email || '');
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (settings) {
+      setEmailNotifications(settings.emailNotifications);
+      setPushNotifications(settings.pushNotifications);
+      setWeeklySummary(settings.weeklySummary);
+    }
+  }, [settings]);
 
   const handleSaveProfile = async () => {
     try {
@@ -81,6 +94,54 @@ export default function SettingsPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2) || 'U';
+  };
+
+  const handleThemeChange = async (checked: boolean) => {
+    try {
+      const newTheme = checked ? 'dark' : 'light';
+      toggleTheme();
+      await updateSettings({ theme: newTheme });
+      toast.success(t('Settings updated successfully!'));
+    } catch (error) {
+      console.error('Erro ao atualizar tema:', error);
+      toast.error(t('An error occurred'));
+    }
+  };
+
+  const handleEmailNotificationsChange = async (checked: boolean) => {
+    try {
+      setEmailNotifications(checked);
+      await updateSettings({ emailNotifications: checked });
+      toast.success(t('Settings updated successfully!'));
+    } catch (error) {
+      console.error('Erro ao atualizar notificações:', error);
+      setEmailNotifications(!checked);
+      toast.error(t('An error occurred'));
+    }
+  };
+
+  const handlePushNotificationsChange = async (checked: boolean) => {
+    try {
+      setPushNotifications(checked);
+      await updateSettings({ pushNotifications: checked });
+      toast.success(t('Settings updated successfully!'));
+    } catch (error) {
+      console.error('Erro ao atualizar notificações:', error);
+      setPushNotifications(!checked);
+      toast.error(t('An error occurred'));
+    }
+  };
+
+  const handleWeeklySummaryChange = async (checked: boolean) => {
+    try {
+      setWeeklySummary(checked);
+      await updateSettings({ weeklySummary: checked });
+      toast.success(t('Settings updated successfully!'));
+    } catch (error) {
+      console.error('Erro ao atualizar notificações:', error);
+      setWeeklySummary(!checked);
+      toast.error(t('An error occurred'));
+    }
   };
 
   return (
@@ -180,7 +241,10 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-              <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={handleThemeChange}
+              />
             </div>
           </CardContent>
         </Card>
@@ -197,7 +261,10 @@ export default function SettingsPage() {
                 <p className="font-medium text-foreground">{t("Email Notifications")}</p>
                 <p className="text-sm text-muted-foreground">{t("Receive email updates about your tasks")}</p>
               </div>
-              <Switch defaultChecked />
+              <Switch
+                checked={emailNotifications}
+                onCheckedChange={handleEmailNotificationsChange}
+              />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -205,7 +272,10 @@ export default function SettingsPage() {
                 <p className="font-medium text-foreground">{t("Push Notifications")}</p>
                 <p className="text-sm text-muted-foreground">{t("Get notified about upcoming deadlines")}</p>
               </div>
-              <Switch defaultChecked />
+              <Switch
+                checked={pushNotifications}
+                onCheckedChange={handlePushNotificationsChange}
+              />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -213,7 +283,10 @@ export default function SettingsPage() {
                 <p className="font-medium text-foreground">{t("Weekly Summary")}</p>
                 <p className="text-sm text-muted-foreground">{t("Receive a weekly productivity report")}</p>
               </div>
-              <Switch />
+              <Switch
+                checked={weeklySummary}
+                onCheckedChange={handleWeeklySummaryChange}
+              />
             </div>
           </CardContent>
         </Card>

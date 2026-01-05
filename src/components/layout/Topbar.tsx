@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useProfile } from '@/hooks/useProfile';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '@/contexts/SearchContext';
 
@@ -15,8 +16,19 @@ export function Topbar({ title, subtitle }: TopbarProps) {
   const { t } = useTranslation();
   // useNotifications agora depende do provider (assinado em App.tsx)
   const { unreadCount } = useNotifications();
+  const { profile } = useProfile();
   const { searchQuery, setSearchQuery } = useSearch();
   const navigate = useNavigate();
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -60,9 +72,27 @@ export function Topbar({ title, subtitle }: TopbarProps) {
         </Button>
 
         {/* User Avatar */}
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary shadow-neumorphic-sm">
-          <span className="font-heading text-sm font-bold">JD</span>
-        </div>
+        {profile?.avatarUrl ? (
+          <img
+            src={profile.avatarUrl}
+            alt="Avatar"
+            className="h-10 w-10 rounded-full object-cover border border-primary shadow-lg cursor-pointer transition-transform hover:scale-105"
+            style={{
+              boxShadow: '0 2px 8px rgba(239, 108, 48, 0.3)',
+            }}
+            onClick={() => navigate('/settings')}
+          />
+        ) : (
+          <div 
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary cursor-pointer transition-transform hover:scale-105"
+            style={{
+              boxShadow: '0 2px 8px rgba(239, 108, 48, 0.3)',
+            }}
+            onClick={() => navigate('/settings')}
+          >
+            <span className="font-heading text-sm font-bold">{getInitials(profile?.fullName)}</span>
+          </div>
+        )}
       </div>
     </header>
   );
