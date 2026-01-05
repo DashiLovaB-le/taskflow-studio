@@ -53,11 +53,20 @@ export default function LoginPage() {
         </Button>
       </div>
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">{t('TaskDay')}</CardTitle>
-          <CardDescription>
-            {isSignUp ? t('Create your account') : t('Sign in to your account')}
-          </CardDescription>
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img 
+              src="/logo-animado-task.gif" 
+              alt="TaskDay" 
+              className="h-16 w-16"
+            />
+          </div>
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-bold">{t('TaskDay')}</CardTitle>
+            <CardDescription>
+              {/* {isSignUp ? t('Create your account') : t('Sign in to your account')} */}
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,10 +107,10 @@ export default function LoginPage() {
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-sm"
             >
-              {isSignUp
+              {/* {isSignUp
                 ? t('Already have an account? Sign in')
                 : t("Don't have an account? Sign up")
-              }
+              } */}
             </Button>
           </div>
         </CardContent>
