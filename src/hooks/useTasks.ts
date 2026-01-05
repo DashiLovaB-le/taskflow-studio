@@ -250,6 +250,28 @@ export function useTasks() {
     return tasks.filter(task => task.status === status);
   }, [tasks]);
 
+  const filterTasksByDateRange = useCallback((startDate: string | null, endDate: string | null) => {
+    return tasks.filter(task => {
+      if (!task.dueDate) return true;
+
+      const taskDate = new Date(task.dueDate);
+
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (taskDate < start) return false;
+      }
+
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (taskDate > end) return false;
+      }
+
+      return true;
+    });
+  }, [tasks]);
+
   const getStats = useCallback(() => {
     const now = new Date();
     return {
@@ -271,6 +293,7 @@ export function useTasks() {
     deleteTask,
     updateTaskStatus,
     getTasksByStatus,
+    filterTasksByDateRange,
     getStats,
   };
 }

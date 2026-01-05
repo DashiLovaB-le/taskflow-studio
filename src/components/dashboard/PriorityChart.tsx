@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, TooltipProps } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +9,28 @@ interface PriorityChartProps {
     color: string;
   }>;
 }
+
+const CustomTooltip = (props: TooltipProps<number, string>) => {
+  const { active, payload } = props;
+  if (active && payload && payload.length) {
+    return (
+      <div
+        style={{
+          backgroundColor: 'hsl(var(--card))',
+          border: '1px solid hsl(var(--border))',
+          borderRadius: '0.75rem',
+          padding: '8px 12px',
+          boxShadow: 'var(--shadow-neumorphic-sm)',
+        }}
+      >
+        <p style={{ color: '#ffffff', margin: 0, fontSize: '12px' }}>
+          {payload[0].name} : {payload[0].value}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export function PriorityChart({ data }: PriorityChartProps) {
   const { t } = useTranslation();
@@ -31,20 +53,13 @@ export function PriorityChart({ data }: PriorityChartProps) {
                 paddingAngle={5}
                 dataKey="value"
                 strokeWidth={0}
+                label={false}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '0.75rem',
-                  boxShadow: 'var(--shadow-neumorphic-sm)',
-                }}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Legend
                 verticalAlign="bottom"
                 formatter={(value) => (

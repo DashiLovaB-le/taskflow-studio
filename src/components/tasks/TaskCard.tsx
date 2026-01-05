@@ -3,7 +3,7 @@ import { Task, TaskPriority, TaskStatus } from '@/types/task';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatRelativeDate } from '@/lib/utils';
+import { formatDateBR } from '@/lib/utils';
 import { 
   CalendarIcon, 
   DotsVerticalIcon, 
@@ -88,7 +88,7 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, draggable }: 
               {task.dueDate && (
                 <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
                   <CalendarIcon className="h-3 w-3" />
-                  <span>{formatRelativeDate(task.dueDate)}</span>
+                  <span>{formatDateBR(task.dueDate)}</span>
                 </div>
               )}
 

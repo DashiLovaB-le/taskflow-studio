@@ -2,25 +2,40 @@ import { useState } from 'react';
 import { PageWrapper } from '@/components/layout';
 import { TaskColumn, TaskModal } from '@/components/tasks';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useTasks } from '@/hooks/useTasks';
+import { useDateFilter } from '@/hooks/useDateFilter';
 import { useSearch } from '@/contexts/SearchContext';
 import { Task, TaskStatus } from '@/types/task';
-import { PlusIcon } from '@radix-ui/react-icons';
+import { PlusIcon, Cross1Icon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 export default function TasksPage() {
   const { t } = useTranslation();
-  const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, getTasksByStatus } = useTasks();
+  const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, filterTasksByDateRange } = useTasks();
+  const { filter, setDateRange, clearFilter, isFiltering } = useDateFilter();
   const { searchQuery } = useSearch();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const filteredTasks = tasks.filter(
+  // Aplicar filtros de busca e período
+  let filteredTasks = tasks.filter(
     (task) =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Aplicar filtro de período se ativo
+  if (isFiltering) {
+    filteredTasks = filterTasksByDateRange(filter.startDate, filter.endDate);
+    // Aplicar também o filtro de busca
+    filteredTasks = filteredTasks.filter(
+      (task) =>
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
 
   const todoTasks = filteredTasks.filter(t => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter(t => t.status === 'in_progress');
@@ -86,6 +101,46 @@ export default function TasksPage() {
               <PlusIcon className="mr-2 h-4 w-4" />
               {t("New Task")}
             </Button>
+          </div>
+        </div>
+
+        {/* Date Filter */}
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+          <h3 className="font-semibold text-foreground">{t("Filter by Period")}</h3>
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 space-y-1">
+              <label htmlFor="start-date" className="text-sm font-medium text-muted-foreground">
+                {t("Start Date")}
+              </label>
+              <Input
+                id="start-date"
+                type="date"
+                value={filter.startDate || ''}
+                onChange={(e) => setDateRange(e.target.value || null, filter.endDate)}
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <label htmlFor="end-date" className="text-sm font-medium text-muted-foreground">
+                {t("End Date")}
+              </label>
+              <Input
+                id="end-date"
+                type="date"
+                value={filter.endDate || ''}
+                onChange={(e) => setDateRange(filter.startDate, e.target.value || null)}
+              />
+            </div>
+            {isFiltering && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilter}
+                className="gap-2"
+              >
+                <Cross1Icon className="h-4 w-4" />
+                {t("Clear Filter")}
+              </Button>
+            )}
           </div>
         </div>
 

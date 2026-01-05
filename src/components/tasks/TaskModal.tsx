@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Task, TaskPriority, TaskStatus } from '@/types/task';
 import {
   Dialog,
@@ -29,11 +29,29 @@ interface TaskModalProps {
 
 export function TaskModal({ open, onOpenChange, task, onSave }: TaskModalProps) {
   const { t } = useTranslation();
-  const [title, setTitle] = useState(task?.title || '');
-  const [description, setDescription] = useState(task?.description || '');
-  const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
-  const [status, setStatus] = useState<TaskStatus>(task?.status || 'todo');
-  const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split('T')[0] : '');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [status, setStatus] = useState<TaskStatus>('todo');
+  const [dueDate, setDueDate] = useState('');
+
+  // Sincronizar estado quando a tarefa ou modal muda
+  useEffect(() => {
+    if (open && task) {
+      setTitle(task.title || '');
+      setDescription(task.description || '');
+      setPriority(task.priority || 'medium');
+      setStatus(task.status || 'todo');
+      setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+    } else if (open && !task) {
+      // Limpar para nova tarefa
+      setTitle('');
+      setDescription('');
+      setPriority('medium');
+      setStatus('todo');
+      setDueDate('');
+    }
+  }, [open, task]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -157,6 +157,10 @@ const resources = {
       "Please select an image file": "Por favor, selecione um arquivo de imagem",
       "Image must be less than 5MB": "A imagem deve ter menos de 5MB",
       "Settings updated successfully!": "Configurações atualizadas com sucesso!",
+      "Filter by Period": "Filtrar por Período",
+      "Start Date": "Data de Início",
+      "End Date": "Data de Término",
+      "Clear Filter": "Limpar Filtro",
     }
   }
 };
