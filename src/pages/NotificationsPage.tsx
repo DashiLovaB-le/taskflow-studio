@@ -1,28 +1,13 @@
-import { useState } from 'react';
 import { PageWrapper } from '@/components/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BellIcon, CheckIcon } from '@radix-ui/react-icons';
 import { useTranslation } from 'react-i18next';
-
-type Notification = {
-  id: string;
-  title: string;
-  description?: string;
-  isRead?: boolean;
-  time?: string;
-};
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: '1', title: 'New comment on your task', description: 'Alice comentou na tarefa "Design new landing page"', isRead: false, time: '2h' },
-    { id: '2', title: 'Deployment successful', description: 'A versão v1.2 foi implantada', isRead: false, time: '1d' },
-    { id: '3', title: 'Weekly summary ready', description: 'Seu resumo semanal está disponível', isRead: true, time: '3d' },
-  ]);
-
-  const markAllRead = () => setNotifications((prev) => prev.map(n => ({ ...n, isRead: true })));
-  const markRead = (id: string) => setNotifications((prev) => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  const { notifications, markAllRead, markRead } = useNotifications();
 
   return (
     <PageWrapper>

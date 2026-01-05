@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   DashboardIcon,
@@ -11,11 +11,13 @@ import {
   Cross1Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ExitIcon,
 } from '@radix-ui/react-icons';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { path: '/dashboard', labelKey: 'Dashboard', icon: DashboardIcon },
@@ -32,8 +34,19 @@ export function Sidebar({ className }: SidebarProps) {
   const { t } = useTranslation();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
@@ -69,8 +82,8 @@ export function Sidebar({ className }: SidebarProps) {
         })}
       </nav>
 
-      {/* Theme Toggle */}
-      <div className="border-t border-sidebar-border p-4">
+      {/* Theme Toggle and Logout */}
+      <div className="border-t border-sidebar-border p-4 space-y-2">
         <Button
           variant="neumorphic"
           size="lg"
@@ -88,6 +101,16 @@ export function Sidebar({ className }: SidebarProps) {
               {!collapsed && t("Light Mode")}
             </>
           )}
+        </Button>
+
+        <Button
+          variant="neumorphic"
+          size="lg"
+          onClick={handleSignOut}
+          className={cn("w-full justify-start gap-3", collapsed && "justify-center px-3")}
+        >
+          <ExitIcon className="h-5 w-5" />
+          {!collapsed && t("Logout")}
         </Button>
       </div>
     </>
@@ -132,7 +155,7 @@ export function Sidebar({ className }: SidebarProps) {
         )}
       >
         <NavContent collapsed={collapsed} />
-        
+
         {/* Collapse Button */}
         <div className="border-t border-sidebar-border p-4">
           <Button

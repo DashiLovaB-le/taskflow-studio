@@ -1,97 +1,188 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
-import { generateId } from '@/lib/utils';
-
-// Mock initial tasks for demo
-const initialTasks: Task[] = [
-  {
-    id: generateId(),
-    title: 'Design new landing page',
-    description: 'Create mockups for the new marketing landing page',
-    status: 'in_progress',
-    priority: 'high',
-    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    title: 'Review pull requests',
-    description: 'Review and merge pending PRs from the team',
-    status: 'todo',
-    priority: 'medium',
-    dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    title: 'Update documentation',
-    description: 'Update API documentation with new endpoints',
-    status: 'todo',
-    priority: 'low',
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    title: 'Fix authentication bug',
-    description: 'Users are getting logged out unexpectedly',
-    status: 'done',
-    priority: 'high',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    title: 'Setup CI/CD pipeline',
-    description: 'Configure GitHub Actions for automated deployments',
-    status: 'done',
-    priority: 'medium',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    title: 'Team meeting preparation',
-    description: 'Prepare slides for weekly team standup',
-    status: 'in_progress',
-    priority: 'medium',
-    dueDate: new Date(Date.now()).toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newTask: Task = {
-      ...task,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+  // Load tasks from Supabase
+  useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadTasks = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('taskday_tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formattedTasks: Task[] = data.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          status: task.status as TaskStatus,
+          priority: task.priority as TaskPriority,
+          dueDate: task.due_date,
+          isAiGenerated: task.is_ai_generated,
+          createdAt: task.created_at,
+          updatedAt: task.updated_at,
+        }));
+
+        setTasks(formattedTasks);
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    setTasks(prev => [newTask, ...prev]);
-    return newTask;
-  }, []);
 
-  const updateTask = useCallback((id: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(task => 
-      task.id === id 
-        ? { ...task, ...updates, updatedAt: new Date().toISOString() }
-        : task
-    ));
-  }, []);
+    loadTasks();
 
-  const deleteTask = useCallback((id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
-  }, []);
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('tasks_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'taskday_tasks',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newTask: Task = {
+              id: payload.new.id,
+              title: payload.new.title,
+              description: payload.new.description,
+              status: payload.new.status as TaskStatus,
+              priority: payload.new.priority as TaskPriority,
+              dueDate: payload.new.due_date,
+              isAiGenerated: payload.new.is_ai_generated,
+              createdAt: payload.new.created_at,
+              updatedAt: payload.new.updated_at,
+            };
+            setTasks(prev => [newTask, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTasks(prev => prev.map(task =>
+              task.id === payload.new.id
+                ? {
+                    ...task,
+                    title: payload.new.title,
+                    description: payload.new.description,
+                    status: payload.new.status as TaskStatus,
+                    priority: payload.new.priority as TaskPriority,
+                    dueDate: payload.new.due_date,
+                    isAiGenerated: payload.new.is_ai_generated,
+                    updatedAt: payload.new.updated_at,
+                  }
+                : task
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
 
-  const updateTaskStatus = useCallback((id: string, status: TaskStatus) => {
-    updateTask(id, { status });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      const { data, error } = await supabase
+        .from('taskday_tasks')
+        .insert({
+          user_id: user.id,
+          title: task.title,
+          description: task.description,
+          status: task.status,
+          priority: task.priority,
+          due_date: task.dueDate,
+          is_ai_generated: task.isAiGenerated,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newTask: Task = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        status: data.status as TaskStatus,
+        priority: data.priority as TaskPriority,
+        dueDate: data.due_date,
+        isAiGenerated: data.is_ai_generated,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+
+      return newTask;
+    } catch (error) {
+      console.error('Error adding task:', error);
+      throw error;
+    }
+  }, [user]);
+
+  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    if (!user) return;
+
+    try {
+      const updateData: any = {};
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.priority !== undefined) updateData.priority = updates.priority;
+      if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
+      if (updates.isAiGenerated !== undefined) updateData.is_ai_generated = updates.isAiGenerated;
+
+      const { error } = await supabase
+        .from('taskday_tasks')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  }, [user]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('taskday_tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
+  }, [user]);
+
+  const updateTaskStatus = useCallback(async (id: string, status: TaskStatus) => {
+    await updateTask(id, { status });
   }, [updateTask]);
 
   const getTasksByStatus = useCallback((status: TaskStatus) => {
@@ -113,6 +204,7 @@ export function useTasks() {
 
   return {
     tasks,
+    loading,
     addTask,
     updateTask,
     deleteTask,

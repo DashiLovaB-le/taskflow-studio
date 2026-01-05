@@ -1,3 +1,4 @@
+import React from 'react';
 import { PageWrapper } from '@/components/layout';
 import { StatsCard, PriorityChart, StatusChart, ActivityChart } from '@/components/dashboard';
 import { useTasks } from '@/hooks/useTasks';
@@ -27,16 +28,25 @@ export default function DashboardPage() {
     { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
   ];
 
-  // Mock weekly activity data
-  const activityData = [
-    { name: 'Mon', completed: 3 },
-    { name: 'Tue', completed: 5 },
-    { name: 'Wed', completed: 2 },
-    { name: 'Thu', completed: 7 },
-    { name: 'Fri', completed: 4 },
-    { name: 'Sat', completed: 1 },
-    { name: 'Sun', completed: 2 },
-  ];
+  // Calculate weekly activity data from real tasks
+  const activityData = React.useMemo(() => {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const completedTasksByDay = tasks
+      .filter(task => task.status === 'done' && task.updatedAt && new Date(task.updatedAt) >= sevenDaysAgo)
+      .reduce((acc, task) => {
+        const dayIndex = new Date(task.updatedAt!).getDay();
+        acc[dayIndex] = (acc[dayIndex] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
+
+    return days.map((day, index) => ({
+      name: day,
+      completed: completedTasksByDay[index] || 0,
+    }));
+  }, [tasks]);
 
   return (
     <PageWrapper>

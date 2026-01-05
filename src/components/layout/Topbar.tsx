@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
 
 interface TopbarProps {
   title?: string;
@@ -13,6 +15,9 @@ interface TopbarProps {
 export function Topbar({ title, subtitle, onSearch }: TopbarProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
+  // useNotifications agora depende do provider (assinado em App.tsx)
+  const { unreadCount } = useNotifications();
+  const navigate = useNavigate();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -47,11 +52,13 @@ export function Topbar({ title, subtitle, onSearch }: TopbarProps) {
         </div>
 
         {/* Notifications */}
-        <Button variant="neumorphic" size="icon" className="relative">
+        <Button variant="neumorphic" size="icon" className="relative" onClick={() => navigate('/notifications')}>
           <BellIcon className="h-5 w-5" />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-            3
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+              {unreadCount}
+            </span>
+          )}
         </Button>
 
         {/* User Avatar */}

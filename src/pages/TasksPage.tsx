@@ -4,7 +4,7 @@ import { TaskColumn, TaskModal } from '@/components/tasks';
 import { Button } from '@/components/ui/button';
 import { useTasks } from '@/hooks/useTasks';
 import { Task, TaskStatus } from '@/types/task';
-import { PlusIcon, MagicWandIcon } from '@radix-ui/react-icons';
+import { PlusIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -13,7 +13,6 @@ export default function TasksPage() {
   const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, getTasksByStatus } = useTasks();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTasks = tasks.filter(
@@ -54,34 +53,6 @@ export default function TasksPage() {
     }
   };
 
-  const handleAiSuggest = async () => {
-    setAiLoading(true);
-    
-    // Simulate AI response
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const suggestions = [
-      {
-        title: 'Review pending code reviews',
-        description: 'Check for any outstanding PRs that need attention',
-        priority: 'medium' as const,
-        status: 'todo' as const,
-        isAiGenerated: true,
-      },
-      {
-        title: 'Update project documentation',
-        description: 'Ensure README and API docs are up to date',
-        priority: 'low' as const,
-        status: 'todo' as const,
-        isAiGenerated: true,
-      },
-    ];
-
-    suggestions.forEach(task => addTask(task));
-    setAiLoading(false);
-    toast.success(t('AI suggested 2 new tasks! ✨'));
-  };
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
@@ -96,14 +67,6 @@ export default function TasksPage() {
             <p className="text-muted-foreground mt-1">{t("Manage and organize your work")}</p>
           </div>
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={handleAiSuggest}
-              disabled={aiLoading}
-            >
-              <MagicWandIcon className="mr-2 h-4 w-4" />
-              {aiLoading ? t('Thinking...') : t('AI Suggest')}
-            </Button>
             <Button onClick={() => {
               setEditingTask(null);
               setModalOpen(true);
