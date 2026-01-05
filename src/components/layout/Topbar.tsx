@@ -6,6 +6,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile } from '@/hooks/useProfile';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '@/contexts/SearchContext';
+import { WeatherWidget } from './WeatherWidget';
 
 interface TopbarProps {
   title?: string;
@@ -19,6 +20,22 @@ export function Topbar({ title, subtitle }: TopbarProps) {
   const { profile } = useProfile();
   const { searchQuery, setSearchQuery } = useSearch();
   const navigate = useNavigate();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('Good morning');
+    if (hour < 18) return t('Good afternoon');
+    return t('Good evening');
+  };
+
+  const getFormattedDate = () => {
+    const today = new Date();
+    return today.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -37,7 +54,23 @@ export function Topbar({ title, subtitle }: TopbarProps) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card/50 px-6 backdrop-blur-sm lg:px-8">
-      <div className="flex-1 lg:pl-0 pl-12">
+      <div className="flex-1 flex items-center gap-4 lg:pl-0 pl-12">
+        {/* Greeting */}
+        <div className="hidden sm:flex flex-col">
+          <p className="text-sm font-medium text-foreground">
+            {getGreeting()} chefe!
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Hoje é {getFormattedDate()}
+          </p>
+        </div>
+
+        {/* Weather Widget */}
+        <div className="hidden lg:block">
+          <WeatherWidget />
+        </div>
+
+        {/* Title */}
         {title && (
           <div>
             <h1 className="font-heading text-xl font-bold text-foreground">{title}</h1>

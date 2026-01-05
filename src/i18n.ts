@@ -161,6 +161,9 @@ const resources = {
       "Start Date": "Data de Início",
       "End Date": "Data de Término",
       "Clear Filter": "Limpar Filtro",
+      "Good morning": "Bom dia",
+      "Good afternoon": "Boa tarde",
+      "Good evening": "Boa noite",
     }
   }
 };
