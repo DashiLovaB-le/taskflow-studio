@@ -60,19 +60,26 @@ export function useTasks() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          // Skip updates for tasks that were just modified locally to avoid duplicates
           if (payload.eventType === 'INSERT') {
-            const newTask: Task = {
-              id: payload.new.id,
-              title: payload.new.title,
-              description: payload.new.description,
-              status: payload.new.status as TaskStatus,
-              priority: payload.new.priority as TaskPriority,
-              dueDate: payload.new.due_date,
-              isAiGenerated: payload.new.is_ai_generated,
-              createdAt: payload.new.created_at,
-              updatedAt: payload.new.updated_at,
-            };
-            setTasks(prev => [newTask, ...prev]);
+            setTasks(prev => {
+              // Check if task already exists (avoid duplicates from local operations)
+              const exists = prev.some(task => task.id === payload.new.id);
+              if (exists) return prev;
+
+              const newTask: Task = {
+                id: payload.new.id,
+                title: payload.new.title,
+                description: payload.new.description,
+                status: payload.new.status as TaskStatus,
+                priority: payload.new.priority as TaskPriority,
+                dueDate: payload.new.due_date,
+                isAiGenerated: payload.new.is_ai_generated,
+                createdAt: payload.new.created_at,
+                updatedAt: payload.new.updated_at,
+              };
+              return [newTask, ...prev];
+            });
           } else if (payload.eventType === 'UPDATE') {
             setTasks(prev => prev.map(task =>
               task.id === payload.new.id
@@ -132,6 +139,9 @@ export function useTasks() {
         updatedAt: data.updated_at,
       };
 
+      // Atualização otimista: adiciona imediatamente ao estado local
+      setTasks(prev => [newTask, ...prev]);
+
       return newTask;
     } catch (error) {
       console.error('Error adding task:', error);
@@ -141,6 +151,11 @@ export function useTasks() {
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     if (!user) return;
+
+    // Atualização otimista: atualiza o estado local imediatamente
+    setTasks(prev => prev.map(task =>
+      task.id === id ? { ...task, ...updates } : task
+    ));
 
     try {
       const updateData: any = {};
@@ -160,12 +175,37 @@ export function useTasks() {
       if (error) throw error;
     } catch (error) {
       console.error('Error updating task:', error);
+      // Revert the optimistic update on error
+      const { data } = await supabase
+        .from('taskday_tasks')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (data) {
+        setTasks(prev => prev.map(task =>
+          task.id === id
+            ? {
+                ...task,
+                title: data.title,
+                description: data.description,
+                status: data.status as TaskStatus,
+                priority: data.priority as TaskPriority,
+                dueDate: data.due_date,
+                isAiGenerated: data.is_ai_generated,
+              }
+            : task
+        ));
+      }
       throw error;
     }
   }, [user]);
 
   const deleteTask = useCallback(async (id: string) => {
     if (!user) return;
+
+    // Atualização otimista: remove imediatamente do estado local
+    setTasks(prev => prev.filter(task => task.id !== id));
 
     try {
       const { error } = await supabase
@@ -177,6 +217,27 @@ export function useTasks() {
       if (error) throw error;
     } catch (error) {
       console.error('Error deleting task:', error);
+      // Revert the optimistic update on error by reloading the task
+      const { data } = await supabase
+        .from('taskday_tasks')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (data) {
+        const task: Task = {
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          status: data.status as TaskStatus,
+          priority: data.priority as TaskPriority,
+          dueDate: data.due_date,
+          isAiGenerated: data.is_ai_generated,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+        setTasks(prev => [task, ...prev]);
+      }
       throw error;
     }
   }, [user]);

@@ -14,6 +14,7 @@ import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import { NotificationsProvider } from '@/hooks/useNotifications';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { SearchProvider } from '@/contexts/SearchContext';
 import { PublicRoute } from '@/components/layout/PublicRoute';
 
 const queryClient = new QueryClient();
@@ -35,11 +36,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner position="top-right" />
-        <NotificationsProvider>
-          <BrowserRouter>
+      <SearchProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner position="top-right" />
+          <NotificationsProvider>
+            <BrowserRouter>
             <Routes>
             {/* Landing page */}
             <Route path="/" element={<LandingPage />} />
@@ -65,8 +67,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </NotificationsProvider>
-      </TooltipProvider>
-    </AuthProvider>
+      </TooltipProvider>    </SearchProvider>    </AuthProvider>
   </QueryClientProvider>
 );
 

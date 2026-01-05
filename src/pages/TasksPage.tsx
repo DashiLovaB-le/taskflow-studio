@@ -3,6 +3,7 @@ import { PageWrapper } from '@/components/layout';
 import { TaskColumn, TaskModal } from '@/components/tasks';
 import { Button } from '@/components/ui/button';
 import { useTasks } from '@/hooks/useTasks';
+import { useSearch } from '@/contexts/SearchContext';
 import { Task, TaskStatus } from '@/types/task';
 import { PlusIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
@@ -11,9 +12,9 @@ import { useTranslation } from 'react-i18next';
 export default function TasksPage() {
   const { t } = useTranslation();
   const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, getTasksByStatus } = useTasks();
+  const { searchQuery } = useSearch();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTasks = tasks.filter(
     (task) =>
@@ -25,15 +26,20 @@ export default function TasksPage() {
   const inProgressTasks = filteredTasks.filter(t => t.status === 'in_progress');
   const doneTasks = filteredTasks.filter(t => t.status === 'done');
 
-  const handleSaveTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (editingTask) {
-      updateTask(editingTask.id, taskData);
-      toast.success(t('Task updated successfully!'));
-    } else {
-      addTask(taskData);
-      toast.success(t('Task created successfully!'));
+  const handleSaveTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      if (editingTask) {
+        await updateTask(editingTask.id, taskData);
+        toast.success(t('Task updated successfully!'));
+      } else {
+        await addTask(taskData);
+        toast.success(t('Task created successfully!'));
+      }
+      setEditingTask(null);
+    } catch (error) {
+      console.error('Error saving task:', error);
+      toast.error(t('An error occurred'));
     }
-    setEditingTask(null);
   };
 
   const handleEditTask = (task: Task) => {
@@ -41,20 +47,26 @@ export default function TasksPage() {
     setModalOpen(true);
   };
 
-  const handleDeleteTask = (id: string) => {
-    deleteTask(id);
-    toast.success(t('Task deleted successfully!'));
-  };
-
-  const handleStatusChange = (id: string, status: TaskStatus) => {
-    updateTaskStatus(id, status);
-    if (status === 'done') {
-      toast.success(t('Task completed! 🎉'));
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTask(id);
+      toast.success(t('Task deleted successfully!'));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast.error(t('An error occurred'));
     }
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  const handleStatusChange = async (id: string, status: TaskStatus) => {
+    try {
+      await updateTaskStatus(id, status);
+      if (status === 'done') {
+        toast.success(t('Task completed! 🎉'));
+      }
+    } catch (error) {
+      console.error('Error changing task status:', error);
+      toast.error(t('An error occurred'));
+    }
   };
 
   return (

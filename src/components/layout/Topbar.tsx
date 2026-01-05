@@ -2,27 +2,25 @@ import { BellIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
+import { useSearch } from '@/contexts/SearchContext';
 
 interface TopbarProps {
   title?: string;
   subtitle?: string;
-  onSearch?: (query: string) => void;
 }
 
-export function Topbar({ title, subtitle, onSearch }: TopbarProps) {
+export function Topbar({ title, subtitle }: TopbarProps) {
   const { t } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState('');
   // useNotifications agora depende do provider (assinado em App.tsx)
   const { unreadCount } = useNotifications();
+  const { searchQuery, setSearchQuery } = useSearch();
   const navigate = useNavigate();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    onSearch?.(value);
   };
 
   return (
