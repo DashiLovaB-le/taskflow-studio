@@ -149,6 +149,13 @@ const resources = {
       "No tasks scheduled for this day": "Nenhuma tarefa agendada para este dia",
       "Add a task with a due date to see it here": "Adicione uma tarefa com data de vencimento para vê-la aqui",
       "Logout": "Sair",
+      "Profile updated successfully!": "Perfil atualizado com sucesso!",
+      "Saving...": "Salvando...",
+      "Enter your full name": "Digite seu nome completo",
+      "Avatar updated successfully!": "Avatar atualizado com sucesso!",
+      "Uploading...": "Enviando...",
+      "Please select an image file": "Por favor, selecione um arquivo de imagem",
+      "Image must be less than 5MB": "A imagem deve ter menos de 5MB",
     }
   }
 };

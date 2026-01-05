@@ -52,9 +52,11 @@ export function Sidebar({ className }: SidebarProps) {
     <>
       {/* Logo */}
       <div className={cn("flex items-center gap-3 px-4 py-6", collapsed && "justify-center")}>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-neumorphic-sm">
-          <span className="font-heading text-xl font-bold">T</span>
-        </div>
+        <img 
+          src="/logo.png" 
+          alt="TaskDay" 
+          className="h-10 w-10 object-contain"
+        />
         {!collapsed && <span className="font-heading text-xl font-bold text-foreground">TaskDay</span>}
       </div>
 
