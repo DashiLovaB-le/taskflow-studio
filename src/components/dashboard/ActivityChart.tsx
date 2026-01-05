@@ -1,5 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface ActivityChartProps {
   data: Array<{
@@ -9,11 +10,13 @@ interface ActivityChartProps {
 }
 
 export function ActivityChart({ data }: ActivityChartProps) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Weekly Activity</CardTitle>
-        <CardDescription>Tasks completed over the last 7 days</CardDescription>
+        <CardTitle>{t("Weekly Activity")}</CardTitle>
+        <CardDescription>{t("Tasks completed over the last 7 days")}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[260px]">

@@ -7,23 +7,25 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/hooks/useTheme';
 import { SunIcon, MoonIcon } from '@radix-ui/react-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
 
   return (
     <PageWrapper>
       <div className="space-y-6 max-w-2xl">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
+          <h1 className="font-heading text-3xl font-bold text-foreground">{t("Settings")}</h1>
+          <p className="text-muted-foreground mt-1">{t("Manage your account and preferences")}</p>
         </div>
 
         {/* Profile Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>Update your personal information</CardDescription>
+            <CardTitle>{t("Profile")}</CardTitle>
+            <CardDescription>{t("Update your personal information")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
@@ -31,29 +33,29 @@ export default function SettingsPage() {
                 <span className="font-heading text-2xl font-bold">JD</span>
               </div>
               <div>
-                <Button variant="outline" size="sm">Change Avatar</Button>
+                <Button variant="outline" size="sm">{t("Change Avatar")}</Button>
               </div>
             </div>
             <Separator />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">{t("Full Name")}</Label>
                 <Input id="name" defaultValue="John Doe" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("Email")}</Label>
                 <Input id="email" type="email" defaultValue="john@example.com" />
               </div>
             </div>
-            <Button>Save Changes</Button>
+            <Button>{t("Save Changes")}</Button>
           </CardContent>
         </Card>
 
         {/* Appearance Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>Customize how TaskDay looks</CardDescription>
+            <CardTitle>{t("Appearance")}</CardTitle>
+            <CardDescription>{t("Customize how TaskDay looks")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -64,9 +66,9 @@ export default function SettingsPage() {
                   <MoonIcon className="h-5 w-5 text-info" />
                 )}
                 <div>
-                  <p className="font-medium text-foreground">Dark Mode</p>
+                  <p className="font-medium text-foreground">{t("Dark Mode")}</p>
                   <p className="text-sm text-muted-foreground">
-                    {theme === 'light' ? 'Currently using light mode' : 'Currently using dark mode'}
+                    {theme === 'light' ? t("Currently using light mode") : t("Currently using dark mode")}
                   </p>
                 </div>
               </div>
@@ -78,30 +80,30 @@ export default function SettingsPage() {
         {/* Notifications Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>Configure how you receive notifications</CardDescription>
+            <CardTitle>{t("Notifications")}</CardTitle>
+            <CardDescription>{t("Configure how you receive notifications")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-foreground">Email Notifications</p>
-                <p className="text-sm text-muted-foreground">Receive email updates about your tasks</p>
+                <p className="font-medium text-foreground">{t("Email Notifications")}</p>
+                <p className="text-sm text-muted-foreground">{t("Receive email updates about your tasks")}</p>
               </div>
               <Switch defaultChecked />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-foreground">Push Notifications</p>
-                <p className="text-sm text-muted-foreground">Get notified about upcoming deadlines</p>
+                <p className="font-medium text-foreground">{t("Push Notifications")}</p>
+                <p className="text-sm text-muted-foreground">{t("Get notified about upcoming deadlines")}</p>
               </div>
               <Switch defaultChecked />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-foreground">Weekly Summary</p>
-                <p className="text-sm text-muted-foreground">Receive a weekly productivity report</p>
+                <p className="font-medium text-foreground">{t("Weekly Summary")}</p>
+                <p className="text-sm text-muted-foreground">{t("Receive a weekly productivity report")}</p>
               </div>
               <Switch />
             </div>

@@ -6,24 +6,33 @@ import { useTasks } from '@/hooks/useTasks';
 import { Task, TaskStatus } from '@/types/task';
 import { PlusIcon, MagicWandIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function TasksPage() {
+  const { t } = useTranslation();
   const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, getTasksByStatus } = useTasks();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const todoTasks = getTasksByStatus('todo');
-  const inProgressTasks = getTasksByStatus('in_progress');
-  const doneTasks = getTasksByStatus('done');
+  const filteredTasks = tasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const todoTasks = filteredTasks.filter(t => t.status === 'todo');
+  const inProgressTasks = filteredTasks.filter(t => t.status === 'in_progress');
+  const doneTasks = filteredTasks.filter(t => t.status === 'done');
 
   const handleSaveTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingTask) {
       updateTask(editingTask.id, taskData);
-      toast.success('Task updated successfully!');
+      toast.success(t('Task updated successfully!'));
     } else {
       addTask(taskData);
-      toast.success('Task created successfully!');
+      toast.success(t('Task created successfully!'));
     }
     setEditingTask(null);
   };
@@ -35,13 +44,13 @@ export default function TasksPage() {
 
   const handleDeleteTask = (id: string) => {
     deleteTask(id);
-    toast.success('Task deleted successfully!');
+    toast.success(t('Task deleted successfully!'));
   };
 
   const handleStatusChange = (id: string, status: TaskStatus) => {
     updateTaskStatus(id, status);
     if (status === 'done') {
-      toast.success('Task completed! 🎉');
+      toast.success(t('Task completed! 🎉'));
     }
   };
 
@@ -70,7 +79,11 @@ export default function TasksPage() {
 
     suggestions.forEach(task => addTask(task));
     setAiLoading(false);
-    toast.success('AI suggested 2 new tasks! ✨');
+    toast.success(t('AI suggested 2 new tasks! ✨'));
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   return (
@@ -79,8 +92,8 @@ export default function TasksPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-heading text-3xl font-bold text-foreground">Tasks</h1>
-            <p className="text-muted-foreground mt-1">Manage and organize your work</p>
+            <h1 className="font-heading text-3xl font-bold text-foreground">{t("Tasks")}</h1>
+            <p className="text-muted-foreground mt-1">{t("Manage and organize your work")}</p>
           </div>
           <div className="flex gap-3">
             <Button
@@ -89,14 +102,14 @@ export default function TasksPage() {
               disabled={aiLoading}
             >
               <MagicWandIcon className="mr-2 h-4 w-4" />
-              {aiLoading ? 'Thinking...' : 'AI Suggest'}
+              {aiLoading ? t('Thinking...') : t('AI Suggest')}
             </Button>
             <Button onClick={() => {
               setEditingTask(null);
               setModalOpen(true);
             }}>
               <PlusIcon className="mr-2 h-4 w-4" />
-              New Task
+              {t("New Task")}
             </Button>
           </div>
         </div>
@@ -104,7 +117,7 @@ export default function TasksPage() {
         {/* Kanban Board */}
         <div className="flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
           <TaskColumn
-            title="To Do"
+            title={t("To Do")}
             status="todo"
             tasks={todoTasks}
             count={todoTasks.length}
@@ -113,7 +126,7 @@ export default function TasksPage() {
             onStatusChange={handleStatusChange}
           />
           <TaskColumn
-            title="In Progress"
+            title={t("In Progress")}
             status="in_progress"
             tasks={inProgressTasks}
             count={inProgressTasks.length}
@@ -122,7 +135,7 @@ export default function TasksPage() {
             onStatusChange={handleStatusChange}
           />
           <TaskColumn
-            title="Done"
+            title={t("Done")}
             status="done"
             tasks={doneTasks}
             count={doneTasks.length}

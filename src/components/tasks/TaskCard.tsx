@@ -1,3 +1,4 @@
+import React from 'react';
 import { Task, TaskPriority, TaskStatus } from '@/types/task';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from 'react-i18next';
 
 interface TaskCardProps {
   task: Task;
@@ -26,24 +28,37 @@ interface TaskCardProps {
   draggable?: boolean;
 }
 
-const priorityLabels: Record<TaskPriority, string> = {
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-};
-
-const statusLabels: Record<TaskStatus, string> = {
-  todo: 'To Do',
-  in_progress: 'In Progress',
-  done: 'Done',
-};
-
 export function TaskCard({ task, onEdit, onDelete, onStatusChange, draggable }: TaskCardProps) {
+  const { t } = useTranslation();
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
 
+  const priorityLabels: Record<TaskPriority, string> = {
+    high: t('High'),
+    medium: t('Medium'),
+    low: t('Low'),
+  };
+
+  const statusLabels: Record<TaskStatus, string> = {
+    todo: t('To Do'),
+    in_progress: t('In Progress'),
+    done: t('Done'),
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ id: task.id, from: task.status }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = (_e: React.DragEvent) => {
+    // noop for now
+  };
+
   return (
-    <Card 
-      hover 
+    <Card
+      hover
+      draggable={draggable}
+      onDragStart={draggable ? handleDragStart : undefined}
+      onDragEnd={draggable ? handleDragEnd : undefined}
       className={`group relative transition-all duration-300 ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <CardContent className="p-4">
@@ -99,23 +114,23 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, draggable }: 
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => onEdit?.(task)}>
                 <Pencil1Icon className="mr-2 h-4 w-4" />
-                Edit
+                {t("Edit")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {task.status !== 'todo' && (
                 <DropdownMenuItem onClick={() => onStatusChange?.(task.id, 'todo')}>
-                  Move to To Do
+                  {t("Move to To Do")}
                 </DropdownMenuItem>
               )}
               {task.status !== 'in_progress' && (
                 <DropdownMenuItem onClick={() => onStatusChange?.(task.id, 'in_progress')}>
-                  Move to In Progress
+                  {t("Move to In Progress")}
                 </DropdownMenuItem>
               )}
               {task.status !== 'done' && (
                 <DropdownMenuItem onClick={() => onStatusChange?.(task.id, 'done')}>
                   <CheckCircledIcon className="mr-2 h-4 w-4 text-success" />
-                  Mark as Done
+                  {t("Mark as Done")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -124,7 +139,7 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, draggable }: 
                 className="text-destructive focus:text-destructive"
               >
                 <TrashIcon className="mr-2 h-4 w-4" />
-                Delete
+                {t("Delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

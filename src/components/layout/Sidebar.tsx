@@ -9,16 +9,19 @@ import {
   MoonIcon,
   HamburgerMenuIcon,
   Cross1Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@radix-ui/react-icons';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-  { path: '/tasks', label: 'Tasks', icon: ListBulletIcon },
-  { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
-  { path: '/settings', label: 'Settings', icon: GearIcon },
+  { path: '/dashboard', labelKey: 'Dashboard', icon: DashboardIcon },
+  { path: '/tasks', labelKey: 'Tasks', icon: ListBulletIcon },
+  { path: '/calendar', labelKey: 'Calendar', icon: CalendarIcon },
+  { path: '/settings', labelKey: 'Settings', icon: GearIcon },
 ];
 
 interface SidebarProps {
@@ -26,18 +29,20 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className }: SidebarProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
-  const NavContent = () => (
+  const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-6">
+      <div className={cn("flex items-center gap-3 px-4 py-6", collapsed && "justify-center")}>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-neumorphic-sm">
           <span className="font-heading text-xl font-bold">T</span>
         </div>
-        <span className="font-heading text-xl font-bold text-foreground">TaskDay</span>
+        {!collapsed && <span className="font-heading text-xl font-bold text-foreground">TaskDay</span>}
       </div>
 
       {/* Navigation */}
@@ -51,13 +56,14 @@ export function Sidebar({ className }: SidebarProps) {
               onClick={() => setMobileOpen(false)}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300",
+                collapsed ? "justify-center px-3" : "",
                 isActive
                   ? "bg-accent text-accent-foreground shadow-neumorphic-sm"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               <item.icon className="h-5 w-5" />
-              {item.label}
+              {!collapsed && t(item.labelKey)}
             </Link>
           );
         })}
@@ -69,17 +75,17 @@ export function Sidebar({ className }: SidebarProps) {
           variant="neumorphic"
           size="lg"
           onClick={toggleTheme}
-          className="w-full justify-start gap-3"
+          className={cn("w-full justify-start gap-3", collapsed && "justify-center px-3")}
         >
           {theme === 'light' ? (
             <>
               <MoonIcon className="h-5 w-5" />
-              Dark Mode
+              {!collapsed && t("Dark Mode")}
             </>
           ) : (
             <>
               <SunIcon className="h-5 w-5" />
-              Light Mode
+              {!collapsed && t("Light Mode")}
             </>
           )}
         </Button>
@@ -120,11 +126,24 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex w-72 flex-col bg-sidebar border-r border-sidebar-border shadow-neumorphic",
+          "hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border shadow-neumorphic transition-all duration-300",
+          collapsed ? "w-16" : "w-52",
           className
         )}
       >
-        <NavContent />
+        <NavContent collapsed={collapsed} />
+        
+        {/* Collapse Button */}
+        <div className="border-t border-sidebar-border p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-full"
+          >
+            {collapsed ? <ChevronRightIcon className="h-5 w-5" /> : <ChevronLeftIcon className="h-5 w-5" />}
+          </Button>
+        </div>
       </aside>
     </>
   );

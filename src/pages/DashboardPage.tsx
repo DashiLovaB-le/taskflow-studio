@@ -7,8 +7,10 @@ import {
   ExclamationTriangleIcon,
   LayersIcon,
 } from '@radix-ui/react-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { tasks, getStats } = useTasks();
   const stats = getStats();
 
@@ -41,33 +43,33 @@ export default function DashboardPage() {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's your task overview.</p>
+          <h1 className="font-heading text-3xl font-bold text-foreground">{t("Dashboard")}</h1>
+          <p className="text-muted-foreground mt-1">{t("Welcome back! Here's your task overview.")}</p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
-            title="Total Tasks"
+            title={t("Total Tasks")}
             value={stats.total}
             icon={<LayersIcon className="h-6 w-6" />}
             iconClassName="bg-primary/10 text-primary"
           />
           <StatsCard
-            title="Completed"
+            title={t("Completed")}
             value={stats.completed}
             icon={<CheckCircledIcon className="h-6 w-6" />}
             trend={{ value: 12, positive: true }}
             iconClassName="bg-success/10 text-success"
           />
           <StatsCard
-            title="In Progress"
+            title={t("In Progress")}
             value={stats.pending}
             icon={<ClockIcon className="h-6 w-6" />}
             iconClassName="bg-info/10 text-info"
           />
           <StatsCard
-            title="Overdue"
+            title={t("Overdue")}
             value={stats.overdue}
             icon={<ExclamationTriangleIcon className="h-6 w-6" />}
             iconClassName="bg-destructive/10 text-destructive"
@@ -85,7 +87,7 @@ export default function DashboardPage() {
 
         {/* Recent Tasks */}
         <div>
-          <h2 className="font-heading text-xl font-semibold text-foreground mb-4">Recent Tasks</h2>
+          <h2 className="font-heading text-xl font-semibold text-foreground mb-4">{t("Recent Tasks")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tasks.slice(0, 6).map((task) => (
               <div

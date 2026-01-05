@@ -1,6 +1,8 @@
 import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from './TaskCard';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 
 interface TaskColumnProps {
   title: string;
@@ -12,23 +14,51 @@ interface TaskColumnProps {
   onStatusChange?: (id: string, status: TaskStatus) => void;
 }
 
-const statusColors: Record<TaskStatus, string> = {
-  todo: 'bg-muted',
-  in_progress: 'bg-info/20',
-  done: 'bg-success/20',
-};
-
-const statusDots: Record<TaskStatus, string> = {
-  todo: 'bg-muted-foreground',
-  in_progress: 'bg-info',
-  done: 'bg-success',
-};
-
 export function TaskColumn({ title, status, tasks, count, onEdit, onDelete, onStatusChange }: TaskColumnProps) {
+  const { t } = useTranslation();
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragLeave = () => setDragOver(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    try {
+      const payload = JSON.parse(e.dataTransfer.getData('text/plain'));
+      if (payload?.id && onStatusChange && payload.from !== status) {
+        onStatusChange(payload.id, status);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const statusColors: Record<TaskStatus, string> = {
+    todo: 'bg-muted',
+    in_progress: 'bg-info/20',
+    done: 'bg-success/20',
+  };
+
+  const statusDots: Record<TaskStatus, string> = {
+    todo: 'bg-muted-foreground',
+    in_progress: 'bg-info',
+    done: 'bg-success',
+  };
   return (
-    <div className="flex flex-col min-w-[320px] max-w-[360px] flex-1">
+    <div
+      className="flex flex-col min-w-[320px] max-w-[360px] flex-1"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Header */}
-      <div className={cn("flex items-center gap-2 rounded-xl p-3 mb-4", statusColors[status])}>
+      <div className={cn("flex items-center gap-2 rounded-xl p-3 mb-4", statusColors[status], dragOver && 'ring-2 ring-accent/30')}>
         <div className={cn("h-2.5 w-2.5 rounded-full", statusDots[status])} />
         <h3 className="font-heading font-semibold text-foreground">{title}</h3>
         <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-card text-xs font-medium text-muted-foreground shadow-neumorphic-sm">
@@ -43,7 +73,7 @@ export function TaskColumn({ title, status, tasks, count, onEdit, onDelete, onSt
             <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-3">
               <span className="text-2xl">📋</span>
             </div>
-            <p className="text-sm text-muted-foreground">No tasks here</p>
+            <p className="text-sm text-muted-foreground">{t("No tasks here")}</p>
           </div>
         ) : (
           tasks.map((task) => (
@@ -53,6 +83,7 @@ export function TaskColumn({ title, status, tasks, count, onEdit, onDelete, onSt
               onEdit={onEdit}
               onDelete={onDelete}
               onStatusChange={onStatusChange}
+              draggable={true}
             />
           ))
         )}

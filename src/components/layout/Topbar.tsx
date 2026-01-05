@@ -1,13 +1,25 @@
 import { BellIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 
 interface TopbarProps {
   title?: string;
   subtitle?: string;
+  onSearch?: (query: string) => void;
 }
 
-export function Topbar({ title, subtitle }: TopbarProps) {
+export function Topbar({ title, subtitle, onSearch }: TopbarProps) {
+  const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    onSearch?.(value);
+  };
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card/50 px-6 backdrop-blur-sm lg:px-8">
       <div className="flex-1 lg:pl-0 pl-12">
@@ -27,7 +39,9 @@ export function Topbar({ title, subtitle }: TopbarProps) {
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search tasks..."
+            placeholder={t("Search tasks...")}
+            value={searchQuery}
+            onChange={handleSearchChange}
             className="w-64 pl-9 shadow-none"
           />
         </div>

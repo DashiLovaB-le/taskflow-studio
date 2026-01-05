@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface StatusChartProps {
   data: Array<{
@@ -9,10 +10,12 @@ interface StatusChartProps {
 }
 
 export function StatusChart({ data }: StatusChartProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Tasks by Status</CardTitle>
+        <CardTitle>{t("Tasks by Status")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[260px]">

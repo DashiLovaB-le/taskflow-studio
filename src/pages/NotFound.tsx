@@ -2,8 +2,10 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from '@/components/ui/button';
 import { HomeIcon } from '@radix-ui/react-icons';
+import { useTranslation } from 'react-i18next';
 
 const NotFound = () => {
+  const { t } = useTranslation();
   const location = useLocation();
 
   useEffect(() => {
@@ -23,17 +25,17 @@ const NotFound = () => {
         
         <div className="space-y-2">
           <h2 className="font-heading text-2xl font-bold text-foreground">
-            Page Not Found
+            {t("Page Not Found")}
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Oops! The page you're looking for doesn't exist. It might have been moved or deleted.
+            {t("Oops! The page you're looking for doesn't exist. It might have been moved or deleted.")}
           </p>
         </div>
 
         <Link to="/">
           <Button size="lg" className="mt-4">
             <HomeIcon className="mr-2 h-4 w-4" />
-            Back to Home
+            {t("Back to Home")}
           </Button>
         </Link>
       </div>

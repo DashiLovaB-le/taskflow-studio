@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface PriorityChartProps {
   data: Array<{
@@ -10,10 +11,12 @@ interface PriorityChartProps {
 }
 
 export function PriorityChart({ data }: PriorityChartProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Tasks by Priority</CardTitle>
+        <CardTitle>{t("Tasks by Priority")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[260px]">

@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRightIcon, CheckCircledIcon, LightningBoltIcon, BarChartIcon } from '@radix-ui/react-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function LandingPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -25,7 +28,7 @@ export default function LandingPage() {
             </div>
             <Link to="/dashboard">
               <Button>
-                Get Started
+                {t("Get Started")}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -36,27 +39,27 @@ export default function LandingPage() {
             <div className="space-y-4 animate-blur-in">
               <span className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground shadow-neumorphic-sm">
                 <LightningBoltIcon className="h-4 w-4" />
-                Powered by AI
+                {t("Powered by AI")}
               </span>
               <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-extrabold text-foreground leading-tight">
-                Manage Tasks with{' '}
-                <span className="gradient-text">Clarity</span>
+                {t("Manage Tasks with")} {' '}
+                <span className="gradient-text">{t("Clarity")}</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                TaskDay helps you organize, prioritize, and accomplish your work with an intuitive interface and AI-powered suggestions.
+                {t("TaskDay helps you organize, prioritize, and accomplish your work with an intuitive interface and AI-powered suggestions.")}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-blur-in" style={{ animationDelay: '0.2s' }}>
               <Link to="/dashboard">
                 <Button size="xl" className="shadow-glow">
-                  Start Free Today
+                  {t("Start Free Today")}
                   <ArrowRightIcon className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link to="/tasks">
                 <Button variant="outline" size="xl">
-                  View Demo
+                  {t("View Demo")}
                 </Button>
               </Link>
             </div>
@@ -69,10 +72,10 @@ export default function LandingPage() {
                 <CheckCircledIcon className="h-6 w-6 text-success" />
               </div>
               <h3 className="font-heading text-lg font-semibold text-foreground mb-2">
-                Task Management
+                {t("Task Management")}
               </h3>
               <p className="text-muted-foreground">
-                Create, organize, and track your tasks with an intuitive Kanban board interface.
+                {t("Create, organize, and track your tasks with an intuitive Kanban board interface.")}
               </p>
             </div>
 
@@ -81,10 +84,10 @@ export default function LandingPage() {
                 <LightningBoltIcon className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-heading text-lg font-semibold text-foreground mb-2">
-                AI Suggestions
+                {t("AI Suggestions")}
               </h3>
               <p className="text-muted-foreground">
-                Get smart task suggestions based on your workflow and pending work.
+                {t("Get smart task suggestions based on your workflow and pending work.")}
               </p>
             </div>
 
@@ -93,10 +96,10 @@ export default function LandingPage() {
                 <BarChartIcon className="h-6 w-6 text-info" />
               </div>
               <h3 className="font-heading text-lg font-semibold text-foreground mb-2">
-                Analytics Dashboard
+                {t("Analytics Dashboard")}
               </h3>
               <p className="text-muted-foreground">
-                Visualize your productivity with beautiful charts and insights.
+                {t("Visualize your productivity with beautiful charts and insights.")}
               </p>
             </div>
           </div>
@@ -106,7 +109,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
-          <p>© 2026 TaskDay. Built with ❤️ for productivity lovers.</p>
+          <p>{t("© 2026 TaskDay. Built with ❤️ for productivity lovers.")}</p>
         </div>
       </footer>
     </div>
