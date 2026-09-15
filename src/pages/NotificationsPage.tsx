@@ -12,13 +12,15 @@ export default function NotificationsPage() {
   return (
     <PageWrapper>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="max-lg:hidden">
             <h1 className="font-heading text-3xl font-bold text-foreground">{t('Notifications')}</h1>
             <p className="text-muted-foreground mt-1">{t('Notifications Center')}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={markAllRead}>{t('Mark all as read')}</Button>
+          <div className="flex items-center gap-2 max-lg:ml-auto">
+            <Button variant="outline" size="sm" className="rounded-2xl" onClick={markAllRead}>
+              {t('Mark all as read')}
+            </Button>
           </div>
         </div>
 

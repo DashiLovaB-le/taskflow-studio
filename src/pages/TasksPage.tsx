@@ -88,12 +88,12 @@ export default function TasksPage() {
     <PageWrapper>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-lg:pt-1">
+          <div className="max-lg:hidden">
             <h1 className="font-heading text-3xl font-bold text-foreground">{t("Tasks")}</h1>
             <p className="text-muted-foreground mt-1">{t("Manage and organize your work")}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="hidden sm:flex gap-3">
             <Button onClick={() => {
               setEditingTask(null);
               setModalOpen(true);
@@ -103,6 +103,20 @@ export default function TasksPage() {
             </Button>
           </div>
         </div>
+
+        {/* Mobile FAB */}
+        <Button
+          type="button"
+          size="icon"
+          className="fixed z-40 h-14 w-14 rounded-full shadow-glow lg:hidden right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))]"
+          onClick={() => {
+            setEditingTask(null);
+            setModalOpen(true);
+          }}
+          aria-label={t('New Task')}
+        >
+          <PlusIcon className="h-6 w-6" />
+        </Button>
 
         {/* Date Filter */}
         <div className="bg-card border border-border rounded-lg p-4 space-y-3">
@@ -145,7 +159,7 @@ export default function TasksPage() {
         </div>
 
         {/* Kanban Board */}
-        <div className="flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
+        <div className="flex gap-6 overflow-x-auto pb-4 custom-scrollbar max-lg:snap-x max-lg:snap-mandatory max-lg:-mx-4 max-lg:px-4">
           <TaskColumn
             title={t("To Do")}
             status="todo"

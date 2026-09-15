@@ -1,14 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Task, TaskStatus, TaskPriority } from '@/types/task';
-import { supabase } from '@/lib/supabase';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { mapTask } from '@/lib/mappers';
+import { supabase } from '@/lib/supabase';
+import { Task, TaskPriority, TaskStatus } from '@/types/task';
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load tasks from Supabase
   useEffect(() => {
     if (!user) {
       setTasks([]);
@@ -19,26 +19,12 @@ export function useTasks() {
     const loadTasks = async () => {
       try {
         const { data, error } = await supabase
-          .from('taskday_tasks')
+          .from('dashitask_tasks')
           .select('*')
-          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-
-        const formattedTasks: Task[] = data.map(task => ({
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          status: task.status as TaskStatus,
-          priority: task.priority as TaskPriority,
-          dueDate: task.due_date,
-          isAiGenerated: task.is_ai_generated,
-          createdAt: task.created_at,
-          updatedAt: task.updated_at,
-        }));
-
-        setTasks(formattedTasks);
+        setTasks((data ?? []).map(mapTask));
       } catch (error) {
         console.error('Error loading tasks:', error);
       } finally {
@@ -48,57 +34,25 @@ export function useTasks() {
 
     loadTasks();
 
-    // Subscribe to real-time changes
     const channel = supabase
-      .channel('tasks_changes')
+      .channel('dashitask_tasks_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'taskday_tasks',
-          filter: `user_id=eq.${user.id}`,
-        },
+        { event: '*', schema: 'public', table: 'dashitask_tasks' },
         (payload) => {
-          // Skip updates for tasks that were just modified locally to avoid duplicates
           if (payload.eventType === 'INSERT') {
-            setTasks(prev => {
-              // Check if task already exists (avoid duplicates from local operations)
-              const exists = prev.some(task => task.id === payload.new.id);
-              if (exists) return prev;
-
-              const newTask: Task = {
-                id: payload.new.id,
-                title: payload.new.title,
-                description: payload.new.description,
-                status: payload.new.status as TaskStatus,
-                priority: payload.new.priority as TaskPriority,
-                dueDate: payload.new.due_date,
-                isAiGenerated: payload.new.is_ai_generated,
-                createdAt: payload.new.created_at,
-                updatedAt: payload.new.updated_at,
-              };
-              return [newTask, ...prev];
+            setTasks((prev) => {
+              if (prev.some((task) => task.id === payload.new.id)) return prev;
+              return [mapTask(payload.new as never), ...prev];
             });
           } else if (payload.eventType === 'UPDATE') {
-            setTasks(prev => prev.map(task =>
-              task.id === payload.new.id
-                ? {
-                    ...task,
-                    title: payload.new.title,
-                    description: payload.new.description,
-                    status: payload.new.status as TaskStatus,
-                    priority: payload.new.priority as TaskPriority,
-                    dueDate: payload.new.due_date,
-                    isAiGenerated: payload.new.is_ai_generated,
-                    updatedAt: payload.new.updated_at,
-                  }
-                : task
-            ));
+            setTasks((prev) =>
+              prev.map((task) => (task.id === payload.new.id ? mapTask(payload.new as never) : task)),
+            );
           } else if (payload.eventType === 'DELETE') {
-            setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+            setTasks((prev) => prev.filter((task) => task.id !== payload.old.id));
           }
-        }
+        },
       )
       .subscribe();
 
@@ -108,177 +62,96 @@ export function useTasks() {
   }, [user]);
 
   const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!user) throw new Error('User not authenticated');
+    const { data, error } = await supabase
+      .from('dashitask_tasks')
+      .insert({
+        title: task.title,
+        description: task.description ?? null,
+        status: task.status,
+        priority: task.priority,
+        due_at: task.dueDate ?? null,
+      })
+      .select()
+      .single();
 
-    try {
-      const { data, error } = await supabase
-        .from('taskday_tasks')
-        .insert({
-          user_id: user.id,
-          title: task.title,
-          description: task.description,
-          status: task.status,
-          priority: task.priority,
-          due_date: task.dueDate,
-          is_ai_generated: task.isAiGenerated,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newTask: Task = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        status: data.status as TaskStatus,
-        priority: data.priority as TaskPriority,
-        dueDate: data.due_date,
-        isAiGenerated: data.is_ai_generated,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      };
-
-      // Atualização otimista: adiciona imediatamente ao estado local
-      setTasks(prev => [newTask, ...prev]);
-
-      return newTask;
-    } catch (error) {
-      console.error('Error adding task:', error);
-      throw error;
-    }
-  }, [user]);
+    if (error) throw error;
+    const mapped = mapTask(data);
+    setTasks((prev) => (prev.some((row) => row.id === mapped.id) ? prev : [mapped, ...prev]));
+    return mapped;
+  }, []);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
-    if (!user) return;
+    setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, ...updates } : task)));
 
-    // Atualização otimista: atualiza o estado local imediatamente
-    setTasks(prev => prev.map(task =>
-      task.id === id ? { ...task, ...updates } : task
-    ));
+    const updateData: Record<string, unknown> = {};
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.description !== undefined) updateData.description = updates.description ?? null;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.priority !== undefined) updateData.priority = updates.priority;
+    if (updates.dueDate !== undefined) updateData.due_at = updates.dueDate ?? null;
 
     try {
-      const updateData: any = {};
-      if (updates.title !== undefined) updateData.title = updates.title;
-      if (updates.description !== undefined) updateData.description = updates.description;
-      if (updates.status !== undefined) updateData.status = updates.status;
-      if (updates.priority !== undefined) updateData.priority = updates.priority;
-      if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
-      if (updates.isAiGenerated !== undefined) updateData.is_ai_generated = updates.isAiGenerated;
-
-      const { error } = await supabase
-        .from('taskday_tasks')
-        .update(updateData)
-        .eq('id', id)
-        .eq('user_id', user.id);
-
+      const { error } = await supabase.from('dashitask_tasks').update(updateData).eq('id', id);
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating task:', error);
-      // Revert the optimistic update on error
-      const { data } = await supabase
-        .from('taskday_tasks')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
+      const { data } = await supabase.from('dashitask_tasks').select('*').eq('id', id).single();
       if (data) {
-        setTasks(prev => prev.map(task =>
-          task.id === id
-            ? {
-                ...task,
-                title: data.title,
-                description: data.description,
-                status: data.status as TaskStatus,
-                priority: data.priority as TaskPriority,
-                dueDate: data.due_date,
-                isAiGenerated: data.is_ai_generated,
-              }
-            : task
-        ));
+        setTasks((prev) => prev.map((task) => (task.id === id ? mapTask(data) : task)));
       }
       throw error;
     }
-  }, [user]);
+  }, []);
 
   const deleteTask = useCallback(async (id: string) => {
-    if (!user) return;
-
-    // Atualização otimista: remove imediatamente do estado local
-    setTasks(prev => prev.filter(task => task.id !== id));
-
+    const snapshot = tasks.find((task) => task.id === id);
+    setTasks((prev) => prev.filter((task) => task.id !== id));
     try {
-      const { error } = await supabase
-        .from('taskday_tasks')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
+      const { error } = await supabase.from('dashitask_tasks').delete().eq('id', id);
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting task:', error);
-      // Revert the optimistic update on error by reloading the task
-      const { data } = await supabase
-        .from('taskday_tasks')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (data) {
-        const task: Task = {
-          id: data.id,
-          title: data.title,
-          description: data.description,
-          status: data.status as TaskStatus,
-          priority: data.priority as TaskPriority,
-          dueDate: data.due_date,
-          isAiGenerated: data.is_ai_generated,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        };
-        setTasks(prev => [task, ...prev]);
-      }
+      if (snapshot) setTasks((prev) => [snapshot, ...prev]);
       throw error;
     }
-  }, [user]);
-
-  const updateTaskStatus = useCallback(async (id: string, status: TaskStatus) => {
-    await updateTask(id, { status });
-  }, [updateTask]);
-
-  const getTasksByStatus = useCallback((status: TaskStatus) => {
-    return tasks.filter(task => task.status === status);
   }, [tasks]);
 
-  const filterTasksByDateRange = useCallback((startDate: string | null, endDate: string | null) => {
-    return tasks.filter(task => {
-      if (!task.dueDate) return true;
+  const updateTaskStatus = useCallback(
+    async (id: string, status: TaskStatus) => {
+      await updateTask(id, { status });
+    },
+    [updateTask],
+  );
 
-      const taskDate = new Date(task.dueDate);
+  const getTasksByStatus = useCallback(
+    (status: TaskStatus) => tasks.filter((task) => task.status === status),
+    [tasks],
+  );
 
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        if (taskDate < start) return false;
-      }
-
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (taskDate > end) return false;
-      }
-
-      return true;
-    });
-  }, [tasks]);
+  const filterTasksByDateRange = useCallback(
+    (startDate: string | null, endDate: string | null) => {
+      return tasks.filter((task) => {
+        if (!task.dueDate) return true;
+        const taskDate = new Date(task.dueDate);
+        if (startDate) {
+          const start = new Date(`${startDate}T00:00:00-03:00`);
+          if (taskDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(`${endDate}T23:59:59-03:00`);
+          if (taskDate > end) return false;
+        }
+        return true;
+      });
+    },
+    [tasks],
+  );
 
   const getStats = useCallback(() => {
     const now = new Date();
     return {
       total: tasks.length,
-      completed: tasks.filter(t => t.status === 'done').length,
-      pending: tasks.filter(t => t.status !== 'done').length,
-      overdue: tasks.filter(t => {
+      completed: tasks.filter((t) => t.status === 'done').length,
+      pending: tasks.filter((t) => t.status !== 'done').length,
+      overdue: tasks.filter((t) => {
         if (!t.dueDate || t.status === 'done') return false;
         return new Date(t.dueDate) < now;
       }).length,
@@ -297,3 +170,5 @@ export function useTasks() {
     getStats,
   };
 }
+
+export type { TaskPriority };

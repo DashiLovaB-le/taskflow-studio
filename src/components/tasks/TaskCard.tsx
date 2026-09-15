@@ -92,11 +92,6 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, draggable }: 
                 </div>
               )}
 
-              {task.isAiGenerated && (
-                <Badge variant="outline" className="text-xs">
-                  ✨ AI
-                </Badge>
-              )}
             </div>
           </div>
 

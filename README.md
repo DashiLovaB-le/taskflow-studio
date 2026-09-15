@@ -1,73 +1,32 @@
-# Welcome to your Lovable project
+# DashiTask (taskflow-studio)
 
-## Project info
+UI de Tarefas e Eventos do Dono. Mesmo Supabase do Mr Joshua (`dashitask_*`). Fuso: America/Sao_Paulo.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Repo: [DashiLovaB-le/taskflow-studio](https://github.com/DashiLovaB-le/taskflow-studio)
 
-## How can I edit this code?
+## Local
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cp .env.example .env
+# preencha VITE_SUPABASE_ANON_KEY (anon JWT — nunca service_role)
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Vercel
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Projeto Vite na raiz do repo. Build: `npm run build`. Output: `dist`. Node `>=20`.
 
-**Use GitHub Codespaces**
+Environment Variables (Production + Preview + Development) — obrigatórias no **build**:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Name | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://gdcaxslhskxzcrbejxxo.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | anon JWT do projeto (Settings → API) |
 
-## What technologies are used for this project?
+Depois do primeiro deploy, no Supabase → Authentication → URL Configuration:
 
-This project is built with:
+- **Site URL:** a URL da Vercel (`https://….vercel.app`)
+- **Redirect URLs:** `https://SEU-PROJETO.vercel.app/**` (e `http://localhost:8080/**` para local)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Primeiro login na UI reivindica `dashitask_dono`. Evento ≠ Call.

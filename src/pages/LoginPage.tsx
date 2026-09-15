@@ -20,29 +20,36 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setInfo('');
 
     try {
       if (isSignUp) {
-        await signUp(email, password);
-        setError(t('Check your email for confirmation'));
+        const result = await signUp(email, password);
+        if (result.needsConfirmation) {
+          setInfo(t('Check your email for confirmation'));
+          return;
+        }
+        navigate('/dashboard');
       } else {
         await signIn(email, password);
         navigate('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || t('An error occurred'));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('An error occurred');
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="absolute top-4 right-4">
         <Button variant="ghost" size="sm" onClick={toggleTheme}>
           {theme === 'light' ? (
@@ -55,16 +62,16 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <img 
-              src="/logo-animado-task.gif" 
-              alt="TaskDay" 
+            <img
+              src="/logo-animado-task.gif"
+              alt="TaskDay"
               className="h-16 w-16"
             />
           </div>
           <div className="space-y-2">
             <CardTitle className="text-2xl font-bold">{t('TaskDay')}</CardTitle>
             <CardDescription>
-              {/* {isSignUp ? t('Create your account') : t('Sign in to your account')} */}
+              {isSignUp ? t('Create your account') : t('Sign in to your account')}
             </CardDescription>
           </div>
         </CardHeader>
@@ -79,6 +86,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder={t('Enter your email')}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -89,7 +97,9 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 placeholder={t('Enter your password')}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
               />
             </div>
             {error && (
@@ -97,21 +107,43 @@ export default function LoginPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+            {info && (
+              <Alert>
+                <AlertDescription>{info}</AlertDescription>
+              </Alert>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t('Loading...') : isSignUp ? t('Sign Up') : t('Sign In')}
+              {loading ? t('Loading...') : isSignUp ? t('Create account') : t('Sign In')}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <Button
-              variant="link"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm"
-            >
-              {/* {isSignUp
-                ? t('Already have an account? Sign in')
-                : t("Don't have an account? Sign up")
-              } */}
-            </Button>
+          <div className="mt-4 space-y-2 text-center">
+            {isSignUp ? (
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => {
+                  setIsSignUp(false);
+                  setError('');
+                  setInfo('');
+                }}
+                className="text-sm"
+              >
+                {t('Already have an account? Sign in')}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setIsSignUp(true);
+                  setError('');
+                  setInfo('');
+                }}
+              >
+                {t('Create account')}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

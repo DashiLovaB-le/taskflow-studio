@@ -1,14 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  DashboardIcon,
-  ListBulletIcon,
-  CalendarIcon,
-  GearIcon,
   SunIcon,
   MoonIcon,
-  HamburgerMenuIcon,
-  Cross1Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ExitIcon,
@@ -18,13 +12,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-
-const navItems = [
-  { path: '/dashboard', labelKey: 'Dashboard', icon: DashboardIcon },
-  { path: '/tasks', labelKey: 'Tasks', icon: ListBulletIcon },
-  { path: '/calendar', labelKey: 'Calendar', icon: CalendarIcon },
-  { path: '/settings', labelKey: 'Settings', icon: GearIcon },
-];
+import { APP_NAV } from './nav';
 
 interface SidebarProps {
   className?: string;
@@ -36,7 +24,6 @@ export function Sidebar({ className }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   const handleSignOut = async () => {
@@ -48,33 +35,38 @@ export function Sidebar({ className }: SidebarProps) {
     }
   };
 
-  const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
-    <>
-      {/* Logo */}
-      <div className={cn("flex items-center gap-3 px-4 py-6", collapsed && "justify-center")}>
-        <img 
-          src="/logo-animado-task.gif" 
-          alt="TaskDay" 
+  return (
+    <aside
+      className={cn(
+        'hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border shadow-neumorphic transition-all duration-300',
+        collapsed ? 'w-16' : 'w-52',
+        className,
+      )}
+    >
+      <div className={cn('flex items-center gap-3 px-4 py-6', collapsed && 'justify-center')}>
+        <img
+          src="/logo-animado-task.gif"
+          alt="TaskDay"
           className="h-10 w-10 object-contain"
         />
-        {!collapsed && <span className="font-heading text-xl font-bold text-foreground">TaskDay</span>}
+        {!collapsed && (
+          <span className="font-heading text-xl font-bold text-foreground">TaskDay</span>
+        )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItems.map((item) => {
+        {APP_NAV.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
               key={item.path}
               to={item.path}
-              onClick={() => setMobileOpen(false)}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300",
-                collapsed ? "justify-center px-3" : "",
+                'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300',
+                collapsed ? 'justify-center px-3' : '',
                 isActive
-                  ? "bg-accent text-accent-foreground shadow-neumorphic-sm"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? 'bg-accent text-accent-foreground shadow-neumorphic-sm'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -84,23 +76,22 @@ export function Sidebar({ className }: SidebarProps) {
         })}
       </nav>
 
-      {/* Theme Toggle and Logout */}
       <div className="border-t border-sidebar-border p-4 space-y-2">
         <Button
           variant="neumorphic"
           size="lg"
           onClick={toggleTheme}
-          className={cn("w-full justify-start gap-3", collapsed && "justify-center px-3")}
+          className={cn('w-full justify-start gap-3', collapsed && 'justify-center px-3')}
         >
           {theme === 'light' ? (
             <>
               <MoonIcon className="h-5 w-5" />
-              {!collapsed && t("Dark Mode")}
+              {!collapsed && t('Dark Mode')}
             </>
           ) : (
             <>
               <SunIcon className="h-5 w-5" />
-              {!collapsed && t("Light Mode")}
+              {!collapsed && t('Light Mode')}
             </>
           )}
         </Button>
@@ -109,67 +100,27 @@ export function Sidebar({ className }: SidebarProps) {
           variant="neumorphic"
           size="lg"
           onClick={handleSignOut}
-          className={cn("w-full justify-start gap-3", collapsed && "justify-center px-3")}
+          className={cn('w-full justify-start gap-3', collapsed && 'justify-center px-3')}
         >
           <ExitIcon className="h-5 w-5" />
-          {!collapsed && t("Logout")}
+          {!collapsed && t('Logout')}
         </Button>
       </div>
-    </>
-  );
 
-  return (
-    <>
-      {/* Mobile Menu Button */}
-      <Button
-        variant="neumorphic"
-        size="icon"
-        className="fixed left-4 top-4 z-50 lg:hidden"
-        onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        {mobileOpen ? <Cross1Icon className="h-5 w-5" /> : <HamburgerMenuIcon className="h-5 w-5" />}
-      </Button>
-
-      {/* Mobile Overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-sidebar border-r border-sidebar-border transition-transform duration-300 lg:hidden",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <NavContent />
-      </aside>
-
-      {/* Desktop Sidebar */}
-      <aside
-        className={cn(
-          "hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border shadow-neumorphic transition-all duration-300",
-          collapsed ? "w-16" : "w-52",
-          className
-        )}
-      >
-        <NavContent collapsed={collapsed} />
-
-        {/* Collapse Button */}
-        <div className="border-t border-sidebar-border p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full"
-          >
-            {collapsed ? <ChevronRightIcon className="h-5 w-5" /> : <ChevronLeftIcon className="h-5 w-5" />}
-          </Button>
-        </div>
-      </aside>
-    </>
+      <div className="border-t border-sidebar-border p-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full"
+        >
+          {collapsed ? (
+            <ChevronRightIcon className="h-5 w-5" />
+          ) : (
+            <ChevronLeftIcon className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+    </aside>
   );
 }

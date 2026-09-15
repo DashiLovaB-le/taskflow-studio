@@ -52,7 +52,7 @@ export default function DashboardPage() {
     <PageWrapper>
       <div className="space-y-8">
         {/* Header */}
-        <div>
+        <div className="max-lg:hidden">
           <h1 className="font-heading text-3xl font-bold text-foreground">{t("Dashboard")}</h1>
           <p className="text-muted-foreground mt-1">{t("Welcome back! Here's your task overview.")}</p>
         </div>

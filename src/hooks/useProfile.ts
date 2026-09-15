@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,12 +11,62 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+function mapProfile(data: {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}): UserProfile {
+  return {
+    id: data.id,
+    email: data.email,
+    fullName: data.full_name,
+    avatarUrl: data.avatar_url,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
+}
+
 export function useProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load profile from Supabase
+  const updateProfile = useCallback(
+    async (updates: { fullName?: string; avatarUrl?: string }) => {
+      if (!user) return;
+
+      setProfile((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          fullName: updates.fullName !== undefined ? updates.fullName : prev.fullName,
+          avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : prev.avatarUrl,
+        };
+      });
+
+      try {
+        const updateData: Record<string, unknown> = {};
+        if (updates.fullName !== undefined) updateData.full_name = updates.fullName;
+        if (updates.avatarUrl !== undefined) updateData.avatar_url = updates.avatarUrl;
+
+        const { error } = await supabase.from('dashitask_profiles').update(updateData).eq('id', user.id);
+        if (error) throw error;
+      } catch (error) {
+        const { data } = await supabase
+          .from('dashitask_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (data) setProfile(mapProfile(data));
+        throw error;
+      }
+    },
+    [user],
+  );
+
   useEffect(() => {
     if (!user) {
       setProfile(null);
@@ -27,7 +77,7 @@ export function useProfile() {
     const loadProfile = async () => {
       try {
         const { data, error } = await supabase
-          .from('taskday_profiles')
+          .from('dashitask_profiles')
           .select('*')
           .eq('id', user.id)
           .maybeSingle();
@@ -35,18 +85,10 @@ export function useProfile() {
         if (error) throw error;
 
         if (data) {
-          setProfile({
-            id: data.id,
-            email: data.email,
-            fullName: data.full_name,
-            avatarUrl: data.avatar_url,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-          });
+          setProfile(mapProfile(data));
         } else {
-          // Se o perfil não existe, criar um novo
-          const { data: newProfile, error: insertError } = await supabase
-            .from('taskday_profiles')
+          const { data: created, error: insertError } = await supabase
+            .from('dashitask_profiles')
             .insert({
               id: user.id,
               email: user.email,
@@ -55,27 +97,15 @@ export function useProfile() {
             })
             .select('*')
             .single();
-
           if (insertError) throw insertError;
-
-          if (newProfile) {
-            setProfile({
-              id: newProfile.id,
-              email: newProfile.email,
-              fullName: newProfile.full_name,
-              avatarUrl: newProfile.avatar_url,
-              createdAt: newProfile.created_at,
-              updatedAt: newProfile.updated_at,
-            });
-          }
+          if (created) setProfile(mapProfile(created));
         }
       } catch (error) {
         console.error('Erro ao carregar perfil:', error);
-        // Criar um perfil padrão em caso de erro
         if (user) {
           setProfile({
             id: user.id,
-            email: user.email,
+            email: user.email ?? '',
             fullName: null,
             avatarUrl: null,
             createdAt: new Date().toISOString(),
@@ -89,29 +119,19 @@ export function useProfile() {
 
     loadProfile();
 
-    // Subscribe to real-time changes
     const channel = supabase
-      .channel('profile_changes')
+      .channel('dashitask_profiles_changes')
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'taskday_profiles',
+          table: 'dashitask_profiles',
           filter: `id=eq.${user.id}`,
         },
         (payload) => {
-          if (payload.new) {
-            setProfile({
-              id: payload.new.id,
-              email: payload.new.email,
-              fullName: payload.new.full_name,
-              avatarUrl: payload.new.avatar_url,
-              createdAt: payload.new.created_at,
-              updatedAt: payload.new.updated_at,
-            });
-          }
-        }
+          if (payload.new) setProfile(mapProfile(payload.new as never));
+        },
       )
       .subscribe();
 
@@ -120,89 +140,26 @@ export function useProfile() {
     };
   }, [user]);
 
-  const uploadAvatar = useCallback(async (file: File) => {
-    if (!user) return;
+  const uploadAvatar = useCallback(
+    async (file: File) => {
+      if (!user) return;
 
-    try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      // Upload do arquivo
       const { error: uploadError } = await supabase.storage
-        .from('taskday-avatars')
+        .from('dashitask_avatars')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Obter URL pública
-      const { data } = supabase.storage
-        .from('taskday-avatars')
-        .getPublicUrl(filePath);
+      const { data } = supabase.storage.from('dashitask_avatars').getPublicUrl(filePath);
+      await updateProfile({ avatarUrl: data.publicUrl });
+      return data.publicUrl;
+    },
+    [user, updateProfile],
+  );
 
-      const avatarUrl = data.publicUrl;
-
-      // Atualizar perfil com a nova URL
-      await updateProfile({ avatarUrl });
-
-      return avatarUrl;
-    } catch (error) {
-      console.error('Erro ao fazer upload do avatar:', error);
-      throw error;
-    }
-  }, [user]);
-
-  const updateProfile = useCallback(async (updates: { fullName?: string; avatarUrl?: string }) => {
-    if (!user) return;
-
-    // Atualização otimista
-    setProfile(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        fullName: updates.fullName !== undefined ? updates.fullName : prev.fullName,
-        avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : prev.avatarUrl,
-      };
-    });
-
-    try {
-      const updateData: any = {};
-      if (updates.fullName !== undefined) updateData.full_name = updates.fullName;
-      if (updates.avatarUrl !== undefined) updateData.avatar_url = updates.avatarUrl;
-
-      const { error } = await supabase
-        .from('taskday_profiles')
-        .update(updateData)
-        .eq('id', user.id);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
-      // Reverter em caso de erro
-      const { data } = await supabase
-        .from('taskday_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (data) {
-        setProfile({
-          id: data.id,
-          email: data.email,
-          fullName: data.full_name,
-          avatarUrl: data.avatar_url,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        });
-      }
-      throw error;
-    }
-  }, [user]);
-
-  return {
-    profile,
-    loading,
-    updateProfile,
-    uploadAvatar,
-  };
+  return { profile, loading, updateProfile, uploadAvatar };
 }

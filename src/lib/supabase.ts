@@ -1,6 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://yuyflyvtxwhmathuxtrr.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1eWZseXZ0eHdobWF0aHV4dHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTk1MDMsImV4cCI6MjA4MTEzNTUwM30.v0e2_tNwm6-sHQOzWIzqwJ8-LKgehWF3xJ1nCVKqRek'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY em taskflow-studio/.env (veja .env.example).',
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

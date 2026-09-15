@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export type Notification = {
   id: string;
@@ -8,24 +8,50 @@ export type Notification = {
   description?: string;
   isRead?: boolean;
   time?: string;
+  kind?: 'manual' | 'event_soon' | 'task_due';
+  sourceId?: string | null;
 };
 
 type NotificationsContextValue = {
   notifications: Notification[];
   markAllRead: () => void;
   markRead: (id: string) => void;
-  addNotification: (n: Omit<Notification, 'id'|'time'|'isRead'>) => void;
+  addNotification: (n: {
+    title: string;
+    description?: string;
+    kind?: Notification['kind'];
+    sourceId?: string | null;
+  }) => Promise<void>;
   clearNotifications: () => void;
   unreadCount: number;
 };
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
+function mapNotification(row: {
+  id: string;
+  title: string;
+  description: string | null;
+  is_read: boolean;
+  created_at: string;
+  kind?: string;
+  source_id?: string | null;
+}): Notification {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || undefined,
+    isRead: row.is_read,
+    time: formatTime(row.created_at),
+    kind: (row.kind as Notification['kind']) || 'manual',
+    sourceId: row.source_id ?? null,
+  };
+}
+
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { user } = useAuth();
 
-  // Load notifications from Supabase
   useEffect(() => {
     if (!user) {
       setNotifications([]);
@@ -35,22 +61,12 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const loadNotifications = async () => {
       try {
         const { data, error } = await supabase
-          .from('taskday_notifications')
+          .from('dashitask_notifications')
           .select('*')
-          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-
-        const formattedNotifications: Notification[] = data.map(notification => ({
-          id: notification.id,
-          title: notification.title,
-          description: notification.description,
-          isRead: notification.is_read,
-          time: formatTime(notification.created_at),
-        }));
-
-        setNotifications(formattedNotifications);
+        setNotifications((data ?? []).map(mapNotification));
       } catch (error) {
         console.error('Error loading notifications:', error);
       }
@@ -58,43 +74,27 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
     loadNotifications();
 
-    // Subscribe to real-time changes
     const channel = supabase
-      .channel('notifications_changes')
+      .channel('dashitask_notifications_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'taskday_notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
+        { event: '*', schema: 'public', table: 'dashitask_notifications' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            const newNotification: Notification = {
-              id: payload.new.id,
-              title: payload.new.title,
-              description: payload.new.description,
-              isRead: payload.new.is_read,
-              time: formatTime(payload.new.created_at),
-            };
-            setNotifications(prev => [newNotification, ...prev]);
+            setNotifications((prev) => {
+              if (prev.some((item) => item.id === payload.new.id)) return prev;
+              return [mapNotification(payload.new as never), ...prev];
+            });
           } else if (payload.eventType === 'UPDATE') {
-            setNotifications(prev => prev.map(notification =>
-              notification.id === payload.new.id
-                ? {
-                    ...notification,
-                    title: payload.new.title,
-                    description: payload.new.description,
-                    isRead: payload.new.is_read,
-                    time: formatTime(payload.new.created_at),
-                  }
-                : notification
-            ));
+            setNotifications((prev) =>
+              prev.map((item) =>
+                item.id === payload.new.id ? mapNotification(payload.new as never) : item,
+              ),
+            );
           } else if (payload.eventType === 'DELETE') {
-            setNotifications(prev => prev.filter(notification => notification.id !== payload.old.id));
+            setNotifications((prev) => prev.filter((item) => item.id !== payload.old.id));
           }
-        }
+        },
       )
       .subscribe();
 
@@ -103,94 +103,87 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     };
   }, [user]);
 
-  const markAllRead = async () => {
+  const markAllRead = useCallback(async () => {
     if (!user) return;
-
     try {
       const { error } = await supabase
-        .from('taskday_notifications')
+        .from('dashitask_notifications')
         .update({ is_read: true })
-        .eq('user_id', user.id)
         .eq('is_read', false);
-
       if (error) throw error;
-
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
-  };
+  }, [user]);
 
-  const markRead = async (id: string) => {
+  const markRead = useCallback(async (id: string) => {
     if (!user) return;
-
     try {
       const { error } = await supabase
-        .from('taskday_notifications')
+        .from('dashitask_notifications')
         .update({ is_read: true })
-        .eq('id', id)
-        .eq('user_id', user.id);
-
+        .eq('id', id);
       if (error) throw error;
-
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
-  };
+  }, [user]);
 
-  const addNotification = async (n: Omit<Notification, 'id'|'time'|'isRead'>) => {
+  const addNotification = useCallback(async (n: {
+    title: string;
+    description?: string;
+    kind?: Notification['kind'];
+    sourceId?: string | null;
+  }) => {
     if (!user) return;
-
     try {
       const { data, error } = await supabase
-        .from('taskday_notifications')
+        .from('dashitask_notifications')
         .insert({
-          user_id: user.id,
           title: n.title,
-          description: n.description,
+          description: n.description ?? null,
           is_read: false,
+          kind: n.kind ?? 'manual',
+          source_id: n.sourceId ?? null,
         })
         .select()
         .single();
 
-      if (error) throw error;
-
-      const newNotification: Notification = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        isRead: data.is_read,
-        time: formatTime(data.created_at),
-      };
-
-      setNotifications(prev => [newNotification, ...prev]);
+      if (error) {
+        if (error.code === '23505') return;
+        throw error;
+      }
+      setNotifications((prev) => {
+        if (prev.some((item) => item.id === data.id)) return prev;
+        return [mapNotification(data), ...prev];
+      });
     } catch (error) {
       console.error('Error adding notification:', error);
     }
-  };
+  }, [user]);
 
-  const clearNotifications = async () => {
+  const clearNotifications = useCallback(async () => {
     if (!user) return;
-
     try {
       const { error } = await supabase
-        .from('taskday_notifications')
+        .from('dashitask_notifications')
         .delete()
-        .eq('user_id', user.id);
-
+        .neq('id', '00000000-0000-0000-0000-000000000000');
       if (error) throw error;
-
       setNotifications([]);
     } catch (error) {
       console.error('Error clearing notifications:', error);
     }
-  };
+  }, [user]);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <NotificationsContext.Provider value={{ notifications, markAllRead, markRead, addNotification, clearNotifications, unreadCount }}>
+    <NotificationsContext.Provider
+      value={{ notifications, markAllRead, markRead, addNotification, clearNotifications, unreadCount }}
+    >
       {children}
     </NotificationsContext.Provider>
   );
@@ -199,12 +192,11 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 export function useNotifications() {
   const ctx = useContext(NotificationsContext);
   if (!ctx) {
-    // Return default values if not within provider
     return {
       notifications: [],
       markAllRead: () => {},
       markRead: () => {},
-      addNotification: () => {},
+      addNotification: async () => {},
       clearNotifications: () => {},
       unreadCount: 0,
     };
@@ -212,7 +204,6 @@ export function useNotifications() {
   return ctx;
 }
 
-// Helper function to format time
 function formatTime(dateString: string): string {
   const now = new Date();
   const date = new Date(dateString);
@@ -220,11 +211,7 @@ function formatTime(dateString: string): string {
   const diffInHours = diffInMs / (1000 * 60 * 60);
   const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
-  if (diffInHours < 1) {
-    return 'agora';
-  } else if (diffInHours < 24) {
-    return `${Math.floor(diffInHours)}h`;
-  } else {
-    return `${Math.floor(diffInDays)}d`;
-  }
+  if (diffInHours < 1) return 'agora';
+  if (diffInHours < 24) return `${Math.floor(diffInHours)}h`;
+  return `${Math.floor(diffInDays)}d`;
 }

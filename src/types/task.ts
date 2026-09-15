@@ -8,7 +8,6 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
-  isAiGenerated?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,4 +23,18 @@ export interface ChartData {
   name: string;
   value: number;
   color?: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  notes?: string;
+  startsAt: string;
+  endsAt: string;
+  allDay: boolean;
+  location?: string;
+  meetingId?: string | null;
+  remindMinutes: number;
+  createdAt: string;
+  updatedAt: string;
 }

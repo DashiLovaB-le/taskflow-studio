@@ -52,7 +52,7 @@ export function TaskColumn({ title, status, tasks, count, onEdit, onDelete, onSt
   };
   return (
     <div
-      className="flex flex-col min-w-[320px] max-w-[360px] flex-1"
+      className="flex flex-col min-w-[280px] max-lg:min-w-[85vw] max-w-[360px] flex-1 snap-center"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
@@ -7,11 +7,21 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+async function claimDono() {
+  const { data, error } = await supabase.rpc('dashitask_claim_dono');
+  if (error) throw error;
+  const action = data && typeof data === 'object' ? (data as { action?: string }).action : null;
+  if (action === 'deny') {
+    await supabase.auth.signOut();
+    throw new Error('Este login não é o do Dono.');
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -19,39 +29,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    supabase.auth.getSession().then(({ data: { session: next } }) => {
+      window.setTimeout(async () => {
+        try {
+          if (next?.user) await claimDono();
+          setSession(next);
+          setUser(next?.user ?? null);
+        } catch (error) {
+          console.error(error);
+          setSession(null);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+      }, 0);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, next) => {
+      window.setTimeout(async () => {
+        try {
+          if (next?.user) await claimDono();
+          setSession(next);
+          setUser(next?.user ?? null);
+        } catch (error) {
+          console.error(error);
+          setSession(null);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+      }, 0);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    await claimDono();
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
+    if (data.session?.user) {
+      await claimDono();
+      return { needsConfirmation: false };
+    }
+    return { needsConfirmation: true };
   };
 
   const signOut = async () => {
@@ -59,16 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
-  const value = {
-    user,
-    session,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

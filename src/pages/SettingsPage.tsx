@@ -124,6 +124,9 @@ export default function SettingsPage() {
     try {
       setPushNotifications(checked);
       await updateSettings({ pushNotifications: checked });
+      if (checked && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
       toast.success(t('Settings updated successfully!'));
     } catch (error) {
       console.error('Erro ao atualizar notificações:', error);
@@ -147,7 +150,7 @@ export default function SettingsPage() {
   return (
     <PageWrapper>
       <div className="space-y-6 max-w-2xl">
-        <div>
+        <div className="max-lg:hidden">
           <h1 className="font-heading text-3xl font-bold text-foreground">{t("Settings")}</h1>
           <p className="text-muted-foreground mt-1">{t("Manage your account and preferences")}</p>
         </div>

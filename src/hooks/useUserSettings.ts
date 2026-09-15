@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,12 +13,32 @@ export interface UserSettings {
   updatedAt: string;
 }
 
+function mapSettings(data: {
+  id: string;
+  theme: 'light' | 'dark';
+  email_notifications: boolean;
+  push_notifications: boolean;
+  weekly_summary: boolean;
+  created_at: string;
+  updated_at: string;
+}): UserSettings {
+  return {
+    id: data.id,
+    userId: data.id,
+    theme: data.theme,
+    emailNotifications: data.email_notifications,
+    pushNotifications: data.push_notifications,
+    weeklySummary: data.weekly_summary,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
+}
+
 export function useUserSettings() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load settings from Supabase
   useEffect(() => {
     if (!user) {
       setSettings(null);
@@ -29,30 +49,20 @@ export function useUserSettings() {
     const loadSettings = async () => {
       try {
         const { data, error } = await supabase
-          .from('taskday_user_settings')
+          .from('dashitask_settings')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .maybeSingle();
 
         if (error) throw error;
 
         if (data) {
-          setSettings({
-            id: data.id,
-            userId: data.user_id,
-            theme: data.theme,
-            emailNotifications: data.email_notifications,
-            pushNotifications: data.push_notifications,
-            weeklySummary: data.weekly_summary,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-          });
+          setSettings(mapSettings(data));
         } else {
-          // Se as configurações não existem, criar novas
-          const { data: newSettings, error: insertError } = await supabase
-            .from('taskday_user_settings')
+          const { data: created, error: insertError } = await supabase
+            .from('dashitask_settings')
             .insert({
-              user_id: user.id,
+              id: user.id,
               theme: 'light',
               email_notifications: true,
               push_notifications: true,
@@ -60,37 +70,11 @@ export function useUserSettings() {
             })
             .select('*')
             .single();
-
           if (insertError) throw insertError;
-
-          if (newSettings) {
-            setSettings({
-              id: newSettings.id,
-              userId: newSettings.user_id,
-              theme: newSettings.theme,
-              emailNotifications: newSettings.email_notifications,
-              pushNotifications: newSettings.push_notifications,
-              weeklySummary: newSettings.weekly_summary,
-              createdAt: newSettings.created_at,
-              updatedAt: newSettings.updated_at,
-            });
-          }
+          if (created) setSettings(mapSettings(created));
         }
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
-        // Criar configurações padrão em caso de erro
-        if (user) {
-          setSettings({
-            id: crypto.randomUUID(),
-            userId: user.id,
-            theme: 'light',
-            emailNotifications: true,
-            pushNotifications: true,
-            weeklySummary: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        }
       } finally {
         setLoading(false);
       }
@@ -98,31 +82,19 @@ export function useUserSettings() {
 
     loadSettings();
 
-    // Subscribe to real-time changes
     const channel = supabase
-      .channel('settings_changes')
+      .channel('dashitask_settings_changes')
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'taskday_user_settings',
-          filter: `user_id=eq.${user.id}`,
+          table: 'dashitask_settings',
+          filter: `id=eq.${user.id}`,
         },
         (payload) => {
-          if (payload.new) {
-            setSettings({
-              id: payload.new.id,
-              userId: payload.new.user_id,
-              theme: payload.new.theme,
-              emailNotifications: payload.new.email_notifications,
-              pushNotifications: payload.new.push_notifications,
-              weeklySummary: payload.new.weekly_summary,
-              createdAt: payload.new.created_at,
-              updatedAt: payload.new.updated_at,
-            });
-          }
-        }
+          if (payload.new) setSettings(mapSettings(payload.new as never));
+        },
       )
       .subscribe();
 
@@ -140,73 +112,40 @@ export function useUserSettings() {
     }) => {
       if (!user || !settings) return;
 
-      // Atualização otimista
       setSettings((prev) => {
         if (!prev) return null;
         return {
           ...prev,
-          theme: updates.theme !== undefined ? updates.theme : prev.theme,
-          emailNotifications:
-            updates.emailNotifications !== undefined
-              ? updates.emailNotifications
-              : prev.emailNotifications,
-          pushNotifications:
-            updates.pushNotifications !== undefined
-              ? updates.pushNotifications
-              : prev.pushNotifications,
-          weeklySummary:
-            updates.weeklySummary !== undefined
-              ? updates.weeklySummary
-              : prev.weeklySummary,
+          theme: updates.theme ?? prev.theme,
+          emailNotifications: updates.emailNotifications ?? prev.emailNotifications,
+          pushNotifications: updates.pushNotifications ?? prev.pushNotifications,
+          weeklySummary: updates.weeklySummary ?? prev.weeklySummary,
         };
       });
 
       try {
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         if (updates.theme !== undefined) updateData.theme = updates.theme;
         if (updates.emailNotifications !== undefined)
           updateData.email_notifications = updates.emailNotifications;
         if (updates.pushNotifications !== undefined)
           updateData.push_notifications = updates.pushNotifications;
-        if (updates.weeklySummary !== undefined)
-          updateData.weekly_summary = updates.weeklySummary;
+        if (updates.weeklySummary !== undefined) updateData.weekly_summary = updates.weeklySummary;
 
-        const { error } = await supabase
-          .from('taskday_user_settings')
-          .update(updateData)
-          .eq('user_id', user.id);
-
+        const { error } = await supabase.from('dashitask_settings').update(updateData).eq('id', user.id);
         if (error) throw error;
       } catch (error) {
-        console.error('Erro ao atualizar configurações:', error);
-        // Reverter em caso de erro
         const { data } = await supabase
-          .from('taskday_user_settings')
+          .from('dashitask_settings')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .maybeSingle();
-
-        if (data) {
-          setSettings({
-            id: data.id,
-            userId: data.user_id,
-            theme: data.theme,
-            emailNotifications: data.email_notifications,
-            pushNotifications: data.push_notifications,
-            weeklySummary: data.weekly_summary,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-          });
-        }
+        if (data) setSettings(mapSettings(data));
         throw error;
       }
     },
-    [user, settings]
+    [user, settings],
   );
 
-  return {
-    settings,
-    loading,
-    updateSettings,
-  };
+  return { settings, loading, updateSettings };
 }

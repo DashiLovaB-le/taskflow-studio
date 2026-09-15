@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
+import { dateInputFromIso, dueAtFromDateInput } from '@/lib/fuso';
 
 interface TaskModalProps {
   open: boolean;
@@ -42,7 +43,7 @@ export function TaskModal({ open, onOpenChange, task, onSave }: TaskModalProps) 
       setDescription(task.description || '');
       setPriority(task.priority || 'medium');
       setStatus(task.status || 'todo');
-      setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+      setDueDate(dateInputFromIso(task.dueDate));
     } else if (open && !task) {
       // Limpar para nova tarefa
       setTitle('');
@@ -62,7 +63,7 @@ export function TaskModal({ open, onOpenChange, task, onSave }: TaskModalProps) 
       description: description.trim() || undefined,
       priority,
       status,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+      dueDate: dueDate ? dueAtFromDateInput(dueDate) : undefined,
     });
 
     // Reset form
